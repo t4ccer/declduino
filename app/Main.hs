@@ -1,7 +1,7 @@
 module Main where
 
 import CodeGen
-import CodeDecl
+import CodeDecl (Device, deviceToCode)
 import Data.Yaml
 import System.Environment
 import System.Exit
@@ -22,7 +22,7 @@ getFName x
     | otherwise = return $ head x
 
 eitherToCode :: Either ParseException Device -> IO String
-eitherToCode (Left _) = putStrLn "File parsing error" >> exitWith (ExitFailure 1)
+eitherToCode (Left v) = putStrLn ("File parsing error: " ++ show v) >> exitWith (ExitFailure 1)
 eitherToCode (Right v) = return $ declToCode v
 
 declToCode :: Device -> String

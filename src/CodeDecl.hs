@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveGeneric, DuplicateRecordFields #-}
+{-# LANGUAGE DeriveGeneric, DuplicateRecordFields, RebindableSyntax #-}
 
 module CodeDecl where
 
@@ -6,6 +6,8 @@ import CodeGen
 import GHC.Generics
 import Data.Text ()
 import Data.Yaml hiding ((.:))
+import Prelude hiding ((>>), return)
+import Aggregator
 
 
 data Device = Device
@@ -39,31 +41,39 @@ instance ToJSON Component
 
 deviceToCode :: Device -> [CodeToken]
 deviceToCode dev
-    | board dev == "esp32" = getTokens $ start
-        .: Include "<WiFi.h>"
-        .: Include "<PubSubClient.h>"
+    | board dev == "esp32" = unpack ((do
+        Include "<WiFi.h>"
+        Include "<PubSubClient.h>"
 
-        .: VarDecl "WiFiClient" "espClient" [] .: Semicolon
-        .: VarDecl "PubSubClient" "client" [Variable "espClient"] .: Semicolon
-
-        <: funcs
-        
-        .: Function Void "callback" [Argument "char*" "topic",Argument "byte*" "message", Argument "unsigned int" "length"] conds
-
-        .: Function Void "setup" []  (getTokens (start
-            .: Call "WiFi.begin" [StringLit ssid', StringLit pass'] .: Semicolon
-            .: WhileLoop [Call "WiFi.status" [], Op NotEquals, Value (Variable "WL_CONNECTED")] (getTokens (start
-                .: Call "delay" [IntLit 500] .: Semicolon .: NL))
-                
-            .: Call "client.setServer" [StringLit mqtt', IntLit port'] .: Semicolon
-            .: Call "client.setCallback" [Variable "callback"] .: Semicolon
-            .: Call "client.connect" [StringLit "esp32"] .: Semicolon
-            <: subs
-            <: pins))
-        .: Function Void "loop" [] (getTokens (start
-            .: Call "client.loop" []
-            .: Semicolon))
-            
+        VarDecl "WiFiClient" "espClient" []
+        Semicolon
+        VarDecl "PubSubClient" "client" [Variable "espClient"]
+        Semicolon
+        end) <> 
+        funcs <> (do
+        Function Void "callback" [Argument "char*" "topic",Argument "byte*" "message", Argument "unsigned int" "length"] conds
+        Function Void "setup" [] $ unpack( (do 
+            Call "WiFi.begin" [StringLit ssid', StringLit pass']
+            Semicolon
+            WhileLoop (unpack (Call "WiFi.status" [] >> Op NotEquals >> Value (Variable "WL_CONNECTED") >> end)) $ unpack (do
+                Call "delay" [IntLit 500]
+                Semicolon
+                NL
+                end)
+            Call "client.setServer" [StringLit mqtt', IntLit port'] 
+            Semicolon
+            Call "client.setCallback" [Variable "callback"] 
+            Semicolon
+            Call "client.connect" [StringLit "esp32"] 
+            Semicolon
+            end) <> 
+            subs <> 
+            pins)
+        Function Void "loop" [] $ unpack (do
+            Call "client.loop" []
+            Semicolon
+            end)
+        end))
         
     | otherwise = error "Unsupported board"
     where
@@ -71,10 +81,10 @@ deviceToCode dev
         pass' = pass dev
         mqtt' = mqtt dev
         port' = port dev
-        funcs = map componentToFunc $ components dev
+        funcs = Aggregator $ map componentToFunc $ components dev
         conds = map (componentToCallbackCond dev) $ components dev
-        subs  = concatMap (componentToSubs dev) $ components dev
-        pins  = concatMap componentToPinMode $ components dev
+        subs  = Aggregator $ concatMap (componentToSubs dev) $ components dev
+        pins  = Aggregator $ concatMap componentToPinMode $ components dev
 
 compName :: Component -> String
 compName = name::Component->String
@@ -84,21 +94,32 @@ devName = name::Device->String
 
 componentToCallbackCond :: Device -> Component -> CodeToken
 componentToCallbackCond dev comp = 
-    If [Call "String" [Variable "topic"], Op Equals, Value (StringLit ("declduino/"++devName dev++"/"++compName comp))] 
-        [Call "handle_led" [Variable "message", Variable "length"], Semicolon, NL]
+    If [Call "String" [Variable "topic"], Op Equals, Value (StringLit ("declduino/"++devName dev++"/"++compName comp))] $ unpack (do 
+        Call "handle_led" [Variable "message", Variable "length"]
+        Semicolon
+        NL
+        end)
 
 componentToFunc :: Component -> CodeToken
 componentToFunc comp
     | componentType comp == DigitalOutput = 
-        Function Void funcName [Argument "byte*" "message", Argument "unsigned int" "length"] (getTokens (start
-            .: If [Value (Variable "length"), Op NotEquals, Value (IntLit 1)] 
-                [Return []]
-            .: If [Value (Variable "message[0]"), Op Equals, Value (CharLit '1')] (getTokens (start
-                .: Call "digitalWrite" [IntLit pin', Variable "HIGH"] .: Semicolon .: NL))
-            .: Else (getTokens (start 
-                .:If [Value (Variable "message[0]"), Op Equals, Value (CharLit '0')] (getTokens (start
-                    .: Call "digitalWrite" [IntLit pin', Variable "LOW"] .: Semicolon .: NL))))
-            ))
+        Function Void funcName [Argument "byte*" "message", Argument "unsigned int" "length"] (unpack (do
+            If [Value (Variable "length"), Op NotEquals, Value (IntLit 1)] (unpack (do
+                Return[]
+                end))
+            If [Value (Variable "message[0]"), Op Equals, Value (CharLit '1')] (unpack (do
+                Call "digitalWrite" [IntLit pin', Variable "HIGH"] 
+                Semicolon 
+                NL
+                end))
+            Else (unpack (do 
+                If [Value (Variable "message[0]"), Op Equals, Value (CharLit '0')] (unpack (do
+                    Call "digitalWrite" [IntLit pin', Variable "LOW"] 
+                    Semicolon
+                    NL
+                    end))
+                end))
+            end))
     | otherwise = error "Unsupported device"
         where
             pin' = pin comp
@@ -106,15 +127,26 @@ componentToFunc comp
 
 componentToPinMode :: Component -> [CodeToken]
 componentToPinMode comp 
-    | componentType comp == DigitalOutput = getTokens $ start
-         .: Call "pinMode" [IntLit (pin comp), Variable "OUTPUT"] 
-         .: Semicolon 
-         .: NL
+    | componentType comp == DigitalOutput = unpack $ do
+         Call "pinMode" [IntLit (pin comp), Variable "OUTPUT"] 
+         Semicolon 
+         NL
+         end
     
     | otherwise = error "Unsopported device"
 
 componentToSubs :: Device -> Component -> [CodeToken]
 componentToSubs dev comp 
-    | componentType comp == DigitalOutput = getTokens $ start
-        .: Call "client.subscribe" [StringLit ("declduino/"++devName dev++"/"++compName comp)] .: Semicolon .: NL
+    | componentType comp == DigitalOutput = unpack $ do
+        Call "client.subscribe" [StringLit ("declduino/"++devName dev++"/"++compName comp)]
+        Semicolon 
+        NL
+        end
     | otherwise = error "Unsopported device"
+
+infixr 0 >>
+(>>) :: a -> Aggregator a -> Aggregator a
+(>>) = (.>)
+
+end :: Aggregator a
+end = mempty

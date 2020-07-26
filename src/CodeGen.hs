@@ -35,27 +35,6 @@ data CodeToken =
     | Return [CodeToken]
     deriving(Show)
 
-newtype CodeAggr = CodeAggr {list :: [CodeToken]}
-    deriving (Show)
-
-getTokens :: CodeAggr -> [CodeToken]
-getTokens = list
-
-start :: CodeAggr
-start = CodeAggr []
-
-(.:) :: CodeAggr -> CodeToken -> CodeAggr
-(CodeAggr l) .: t = CodeAggr (l++[t])
-
-(<:) :: CodeAggr -> [CodeToken] -> CodeAggr
-(CodeAggr l) <: t = CodeAggr (l++t)
-
-
--- test = getTokens $
---     start
---     .: Include "foo" .: NL
---     .: Include "bar" .: NL
-
 tokenToCode :: CodeToken -> String
 tokenToCode (Call name args) = name ++ "(" ++ litsToCode args ++ ")"
 tokenToCode (VarDecl t n []) = t ++ " " ++ n
