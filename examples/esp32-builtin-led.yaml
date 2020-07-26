@@ -1,0 +1,11 @@
+board: esp32
+name: led-blinker
+ssid: wifi-name
+pass: wifi-pass
+mqtt: mqtt-broker-server
+port: 1883
+components:
+- devType: DigitalOutput
+  name: led
+  pin: 2
+  
