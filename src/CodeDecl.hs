@@ -21,15 +21,15 @@ data Device = Device
 instance FromJSON Device
 instance ToJSON Device
 
-data DeviceType = 
+data ComponentType = 
       DigitalOutput
     | DigitalInput
     deriving(Generic, Show, Eq)
-instance FromJSON DeviceType
-instance ToJSON DeviceType
+instance FromJSON ComponentType
+instance ToJSON ComponentType
 
 data Component = Component
-    { devType::DeviceType
+    { componentType::ComponentType
     , name::String
     , pin::Int
     }
@@ -89,8 +89,8 @@ componentToCallbackCond dev comp =
         [Call "handle_led" [Variable "message", Variable "length"], Semicolon, NL]
 
 componentToFunc :: Component -> CodeToken
-componentToFunc dev
-    | devType dev == DigitalOutput = 
+componentToFunc comp
+    | componentType comp == DigitalOutput = 
         Function Void funcName [Argument "byte*" "message", Argument "unsigned int" "length"] 
             [If [Value (Variable "length"), Op NotEquals, Value (IntLit 1)] [Return []]
                 
@@ -101,15 +101,15 @@ componentToFunc dev
             ]
     | otherwise = error "Unsupported device"
         where
-            pin' = pin dev
-            funcName = "handle_" ++ compName dev
+            pin' = pin comp
+            funcName = "handle_" ++ compName comp
 
 componentToPinMode :: Component -> [CodeToken]
 componentToPinMode comp 
-    | devType comp == DigitalOutput = [Call "pinMode" [IntLit (pin comp), Variable "OUTPUT"],Semicolon,NL]
+    | componentType comp == DigitalOutput = [Call "pinMode" [IntLit (pin comp), Variable "OUTPUT"],Semicolon,NL]
     | otherwise = error "Unsopported device"
 
 componentToSubs :: Device -> Component -> [CodeToken]
 componentToSubs dev comp 
-    | devType comp == DigitalOutput = [Call "client.subscribe" [StringLit ("declduino/"++devName dev++"/"++compName comp)],Semicolon,NL]
+    | componentType comp == DigitalOutput = [Call "client.subscribe" [StringLit ("declduino/"++devName dev++"/"++compName comp)],Semicolon,NL]
     | otherwise = error "Unsopported device"
