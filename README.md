@@ -89,7 +89,7 @@ void loop()
 ### Code related
 - Use propper eDSL for code generating
 - Add support for CLI arguments for board type etc
-
+- Check for name confilcts in component names
 
 ## Contribution
 Feel free to add some features, ideas or fix bugs
