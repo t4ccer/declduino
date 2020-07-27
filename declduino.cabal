@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 2d7d6414a527706550dacc4490b3d77217f8fac8d4def6cc187ac329cdc7979d
+-- hash: 15f4500d21f1c84d65fa7df97b92b04fefab0cb35db019a5eb99792bb7fe1854
 
 name:           declduino
 version:        0.1.0.0
@@ -26,7 +26,6 @@ source-repository head
 
 library
   exposed-modules:
-      Aggregator
       CodeDecl
       CodeGen
   other-modules:
