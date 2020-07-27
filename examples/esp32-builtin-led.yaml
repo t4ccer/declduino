@@ -5,7 +5,7 @@ pass: wifi-pass
 mqtt: mqtt-broker-server
 port: 1883
 components:
-- componentType: DigitalOutput
+- type: digital-output
   name: led
   pin: 2
   

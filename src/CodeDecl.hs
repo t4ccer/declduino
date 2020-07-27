@@ -1,41 +1,70 @@
-{-# LANGUAGE DeriveGeneric, DuplicateRecordFields, RebindableSyntax #-}
+{-# LANGUAGE RebindableSyntax #-}
 
 module CodeDecl where
 
 import CodeGen
-import GHC.Generics
-import Data.Text ()
-import Data.Yaml hiding ((.:))
-import Prelude hiding ((>>), return)
+import Data.Text (pack)
+import Data.Yaml 
+import Prelude hiding ((>>))
 
 data Device = Device
     { board :: String
-    , name::String
+    , device_name::String
     , ssid::String
     , pass::String
     , mqtt::String
     , port::Int
     , components::[Component]
     }
-    deriving(Generic, Show)
-instance FromJSON Device
-instance ToJSON Device
+    deriving(Show)
+instance FromJSON Device where
+    parseJSON (Object v) = do
+        b  <- v .: pack "board"
+        n  <- v .: pack "name"
+        s  <- v .: pack "ssid"
+        pa <- v .: pack "pass"
+        m  <- v .: pack "mqtt"
+        po <- v .: pack "port"
+        c  <- v .: pack "components"
+        return Device 
+            { board = b
+            , device_name = n
+            , ssid = s
+            , pass = pa
+            , mqtt = m
+            , port = po
+            , components = c
+            }
+    parseJSON _ = error "Device parse error"
 
 data ComponentType = 
       DigitalOutput
     | DigitalInput
-    deriving(Generic, Show, Eq)
-instance FromJSON ComponentType
-instance ToJSON ComponentType
+    deriving(Show, Eq)    
 
 data Component = Component
-    { componentType::ComponentType
-    , name::String
+    { component_type::ComponentType
+    , component_name::String
     , pin::Int
     }
-    deriving(Generic, Show)
-instance FromJSON Component
-instance ToJSON Component
+    deriving(Show)
+
+instance FromJSON Component where
+    parseJSON (Object v) = do
+        t <- v .: pack "type"
+        n <- v .: pack "name"
+        p <- v .: pack "pin"
+        return Component 
+            { component_type = to_type t
+            , component_name = n
+            , pin = p
+            }
+        where
+            to_type "digital-output" = DigitalOutput
+            to_type _ = error "Component type parse error"
+    parseJSON _ = error "Component parse error"
+
+
 
 deviceToCode :: Device -> [CodeToken]
 deviceToCode dev
@@ -87,15 +116,10 @@ deviceToCode dev
         subs  = concatMap (componentToSubs dev) $ components dev
         pins  = concatMap componentToPinMode $ components dev
 
-compName :: Component -> String
-compName = name::Component->String
-
-devName :: Device -> String
-devName = name::Device->String
 
 componentToCallbackCond :: Device -> Component -> CodeToken
 componentToCallbackCond dev comp = 
-    If [Call "String" [Variable "topic"], Op Equals, Value (StringLit ("declduino/"++devName dev++"/"++compName comp))] (do 
+    If [Call "String" [Variable "topic"], Op Equals, Value (StringLit ("declduino/"++device_name dev++"/"++component_name comp))] (do 
         Call "handle_led" [Variable "message", Variable "length"]
         Semicolon
         NL
@@ -103,7 +127,7 @@ componentToCallbackCond dev comp =
 
 componentToFunc :: Component -> CodeToken
 componentToFunc comp
-    | componentType comp == DigitalOutput = 
+    | component_type comp == DigitalOutput = 
         Function Void funcName [Argument "byte*" "message", Argument "unsigned int" "length"] (do
             If [Value (Variable "length"), Op NotEquals, Value (IntLit 1)] (do
                 Return[]
@@ -124,11 +148,11 @@ componentToFunc comp
     | otherwise = error "Unsupported device"
         where
             pin' = pin comp
-            funcName = "handle_" ++ compName comp
+            funcName = "handle_" ++ component_name comp
 
 componentToPinMode :: Component -> [CodeToken]
 componentToPinMode comp 
-    | componentType comp == DigitalOutput = do
+    | component_type comp == DigitalOutput = do
          Call "pinMode" [IntLit (pin comp), Variable "OUTPUT"] 
          Semicolon 
          NL
@@ -138,8 +162,8 @@ componentToPinMode comp
 
 componentToSubs :: Device -> Component -> [CodeToken]
 componentToSubs dev comp 
-    | componentType comp == DigitalOutput = do
-        Call "client.subscribe" [StringLit ("declduino/"++devName dev++"/"++compName comp)]
+    | component_type comp == DigitalOutput = do
+        Call "client.subscribe" [StringLit ("declduino/"++device_name dev++"/"++component_name comp)]
         Semicolon 
         NL
         end

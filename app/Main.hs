@@ -12,13 +12,13 @@ import System.Console.CmdArgs (cmdArgs)
 main :: IO ()
 main = do 
     params <- cmdArgs parameters
-    if null (files params) then do
+    if null (p_files params) then do
         putStrLn "Run declduino -h for usage info"
         exitWith (ExitFailure 1)
     else do
-        decoded <- mapM decodeFileEither $ files params
+        decoded <- mapM decodeFileEither $ p_files params
         code <- mapM eitherToCode decoded
-        let names = map ((++".ino") . head . wordsWhen ('.' ==)) $ files params
+        let names = map ((++".ino") . head . wordsWhen ('.' ==)) $ p_files params
         zipWithM_ writeFile names code
 
 wordsWhen     :: (Char -> Bool) -> String -> [String]
