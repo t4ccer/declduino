@@ -2,24 +2,31 @@ module Main where
 
 import CodeGen
 import CodeDecl (Device, deviceToCode)
+import Parameters
 import Data.Yaml
-import System.Environment
 import System.Exit
+import Control.Monad
+import System.Console.CmdArgs (cmdArgs)
+
 
 main :: IO ()
 main = do 
-    file <- filename
-    decoded <- decodeFileEither file
-    code <- eitherToCode decoded
-    writeFile "out.ino" code
+    params <- cmdArgs parameters
+    if null (files params) then do
+        putStrLn "Run declduino -h for usage info"
+        exitWith (ExitFailure 1)
+    else do
+        decoded <- mapM decodeFileEither $ files params
+        code <- mapM eitherToCode decoded
+        let names = map ((++".ino") . head . wordsWhen ('.' ==)) $ files params
+        zipWithM_ writeFile names code
 
-filename :: IO FilePath
-filename = getArgs >>= getFName
+wordsWhen     :: (Char -> Bool) -> String -> [String]
+wordsWhen p s =  case dropWhile p s of
+                      "" -> []
+                      s' -> w : wordsWhen p s''
+                            where (w, s'') = break p s'
 
-getFName :: [String] -> IO String
-getFName x
-    | length x /= 1 = putStrLn "Usage: declduino <fname.yaml>" >> exitWith (ExitFailure 1)
-    | otherwise = return $ head x
 
 eitherToCode :: Either ParseException Device -> IO String
 eitherToCode (Left v) = putStrLn ("File parsing error: " ++ show v) >> exitWith (ExitFailure 1)

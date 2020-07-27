@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 15f4500d21f1c84d65fa7df97b92b04fefab0cb35db019a5eb99792bb7fe1854
+-- hash: 38694c2fe161169e190ffc28dca8838a0776b7a7ee1f915cbd97b18c64266c7b
 
 name:           declduino
 version:        0.1.0.0
@@ -28,6 +28,7 @@ library
   exposed-modules:
       CodeDecl
       CodeGen
+      Parameters
   other-modules:
       Paths_declduino
   hs-source-dirs:
@@ -35,6 +36,7 @@ library
   build-depends:
       base >=4.14.0 && <4.14.1
     , bytestring
+    , cmdargs
     , text >=1.2.3.2
     , yaml
   default-language: Haskell2010
@@ -49,6 +51,7 @@ executable declduino
   build-depends:
       base >=4.14.0 && <4.14.1
     , bytestring
+    , cmdargs
     , declduino
     , text >=1.2.3.2
     , yaml
