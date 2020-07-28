@@ -20,6 +20,7 @@ OPTIONS:
   -s --ssid=<wifi-ssid>    Overrides WiFI SSID
   -p --pass=<wifi-pass>    Overrides WiFi password
   -m --mqtt=<mqtt-addr>    Overrides MQTT broker address
+     --port=<mqtt-port>    Overrides MQTT broker port
   -d --board=<board-type>  Overrides board type
   -n --name=<device-name>  Overrides device name
   -h --help                Take a guess
