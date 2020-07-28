@@ -17,7 +17,8 @@ main = do
         exitWith (ExitFailure 1)
     else do
         decoded <- mapM decodeFileEither $ p_files params
-        code <- mapM eitherToCode decoded
+        let applied = fmap (fmap (applyParameters params)) decoded
+        code <- mapM eitherToCode applied
         let names = map ((++".ino") . head . wordsWhen ('.' ==)) $ p_files params
         zipWithM_ writeFile names code
 

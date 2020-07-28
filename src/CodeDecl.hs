@@ -69,7 +69,7 @@ instance FromJSON Component where
 deviceToCode :: Device -> [CodeToken]
 deviceToCode dev
     | board dev == "esp32" = do
-        Include "<WiFi.h>"
+        Include "\"WiFi.h\""
         Include "<PubSubClient.h>"
 
         VarDecl "WiFiClient" "espClient" []
