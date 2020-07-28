@@ -8,6 +8,5 @@ components:
 - type: digital-input
   name: button
   pin: 15
-  reports:
-  - on-change
-  
+  reporters:
+  - type: on-change

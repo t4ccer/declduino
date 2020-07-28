@@ -9,6 +9,8 @@ import Prelude hiding ((>>))
 import Data.String (fromString, IsString)
 import Data.List (nub)
 
+type Seconds = Int
+
 data BoardType = 
       ESP32
     | UnknownBoard String
@@ -59,14 +61,36 @@ instance IsString ComponentType where
     fromString "digital-input" = DigitalInput
     fromString x = UnknownComponentType x
 
-data ReportMode = 
-      OnChange
-    | UnknownReportMode String
+data ReportType = 
+      OnChangeT
+    | OnTimeT
+    | UnknownReportT String
     deriving(Show, Eq)
 
-instance IsString ReportMode where
-    fromString "on-change" = OnChange
-    fromString x = UnknownReportMode x
+instance IsString ReportType where
+    fromString "on-change" = OnChangeT
+    fromString "on-time" = OnTimeT
+    fromString x = UnknownReportT x
+
+data Reporter = 
+      OnChange
+    | OnTime Seconds
+    | UnknownReporter String
+    deriving(Show, Eq)
+
+instance FromJSON Reporter where
+    parseJSON (Object v) = do
+        t_str <- v .: pack "type"
+        let t = fromString t_str
+        case t of
+            OnChangeT -> return OnChange
+            OnTimeT -> do
+                s <- v .: pack "interval"
+                return (OnTime s)
+            UnknownReportT x -> return (UnknownReporter x)
+
+        -- return (UnknownReporter "")
+    parseJSON _ = error "Reporter parse error"
 
 data Component = 
       DigitalOutputComponent
@@ -76,7 +100,7 @@ data Component =
     | DigitalInputComponent
       { component_name :: String
       , pin :: Int
-      , reports :: [ReportMode]
+      , reports :: [Reporter]
       }
     | UnknownComponent String
     deriving(Show)
@@ -96,11 +120,12 @@ instance FromJSON Component where
                     }
             DigitalInput -> do
                 p <- v .: pack "pin"
-                r_strs <- v .: pack "reports"
+                r <- v .: pack "reporters"
+                
                 return DigitalInputComponent 
                     { component_name = n
                     , pin = p
-                    , reports = fmap fromString r_strs
+                    , reports = r
                     }
     parseJSON _ = error "Component parse error"
 
@@ -248,6 +273,31 @@ componentToCallback dev comp = case board dev of
                             Semicolon
                             end)
                         end
+                gen_reporter (OnTime i) = do
+                    VarDecl "unsigned long" "ms" []
+                    Semicolon
+                    Assigment "ms" [Call "millis" []]
+                    Semicolon 
+                    NL
+                    
+                    If [Value (Variable "ms"), Op Minus, Value (Variable (component_name comp ++ "_previousMillis")), Op GreaterOrEquals, Value (IntLit (i*1000))] (do
+                        Assigment (component_name comp ++ "_previousMillis") [Value (Variable "ms")]
+                        Semicolon
+                        VarDecl "char" "x[2]" []
+                        Semicolon
+                        NL
+                        Assigment "x[0]" [Value (CharLit '0'), Op Plus, Value (Variable ("digitalRead("++show c_pin++")"))]
+                        Semicolon
+                        Assigment "x[1]" [Value (IntLit 0)]
+                        Semicolon
+                        NL
+                        Call "client.publish" [StringLit ("declduino/"++device_name dev++"/"++component_name comp), Variable "x"]
+                        Semicolon
+                        NL
+                        end)
+
+                    end
+                gen_reporter _ = error "Reporter not implemented"
         UnknownComponent x -> error ("Unknown component "++x)
     UnknownBoard x -> error ("Unknown board " ++ x)
     where
@@ -260,6 +310,9 @@ componentToGlobals dev comp = case board dev of
             end
         DigitalInputComponent _ c_pin _ -> do
             VarDecl "int" (component_name comp ++ "_state_" ++ show c_pin) [Variable "LOW"]
+            Semicolon 
+            NL
+            VarDecl "unsigned long " (component_name comp ++ "_previousMillis") [IntLit 0]
             Semicolon 
             NL
             end
