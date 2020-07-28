@@ -6,7 +6,8 @@ import CodeGen
 import Data.Text (pack)
 import Data.Yaml 
 import Prelude hiding ((>>))
-import Data.String
+import Data.String (fromString, IsString)
+import Data.List (nub)
 
 data BoardType = 
       ESP32
@@ -220,31 +221,33 @@ componentToCallback dev comp = case board dev of
                 end)
             end)
         DigitalInputComponent _ c_pin reps ->
-            Function Void func_name [] (do
-                VarDecl "int" "new_state" []
-                Semicolon
-                Assigment "new_state" [Call "digitalRead" [IntLit c_pin]]
-                Semicolon
-                NL
-                If [Value (Variable "new_state"), Op NotEquals,  Value (Variable (component_name comp ++ "_state_" ++ show c_pin))] (do
-                    Assigment (component_name comp ++ "_state_" ++ show c_pin) [Value (Variable "new_state")]
-                    Semicolon
-                    NL
-                    VarDecl "char" "x[2]" []
-                    Semicolon
-                    NL
-                    Assigment "x[0]" [Value (CharLit '0'), Op Plus, Value (Variable "new_state")]
-                    Semicolon
-                    Assigment "x[1]" [Value (IntLit 0)]
-                    Semicolon
-                    NL
-                    Call "client.publish" [StringLit ("declduino/"++device_name dev++"/"++component_name comp), Variable "x"]
-                    Semicolon
-                    NL
-                    Call "delay" [IntLit 10]
-                    Semicolon
-                    end)
-                end)
+                Function Void func_name [] (concatMap gen_reporter $ nub reps)
+            where 
+                gen_reporter OnChange = do
+                        VarDecl "int" "new_state" []
+                        Semicolon
+                        Assigment "new_state" [Call "digitalRead" [IntLit c_pin]]
+                        Semicolon
+                        NL
+                        If [Value (Variable "new_state"), Op NotEquals,  Value (Variable (component_name comp ++ "_state_" ++ show c_pin))] (do
+                            Assigment (component_name comp ++ "_state_" ++ show c_pin) [Value (Variable "new_state")]
+                            Semicolon
+                            NL
+                            VarDecl "char" "x[2]" []
+                            Semicolon
+                            NL
+                            Assigment "x[0]" [Value (CharLit '0'), Op Plus, Value (Variable "new_state")]
+                            Semicolon
+                            Assigment "x[1]" [Value (IntLit 0)]
+                            Semicolon
+                            NL
+                            Call "client.publish" [StringLit ("declduino/"++device_name dev++"/"++component_name comp), Variable "x"]
+                            Semicolon
+                            NL
+                            Call "delay" [IntLit 10]
+                            Semicolon
+                            end)
+                        end
         UnknownComponent x -> error ("Unknown component "++x)
     UnknownBoard x -> error ("Unknown board " ++ x)
     where

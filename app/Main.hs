@@ -8,15 +8,6 @@ import System.Exit
 import Control.Monad
 import System.Console.CmdArgs (cmdArgs)
 
-testParse :: IO ()
-testParse = do 
-    decoded <- (decodeFileEither :: String -> IO (Either ParseException Device)) fname
-    code <- eitherToCode decoded
-    let name = ((++".ino") . head . wordsWhen ('.' ==)) fname
-    writeFile name code
-    where
-        fname = "examples/esp32-button.yaml"
-
 main :: IO ()
 main = do 
     params <- cmdArgs parameters
