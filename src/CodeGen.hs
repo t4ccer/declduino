@@ -17,7 +17,7 @@ data Literal =
 data Argument = Argument String String
     deriving(Show)
 
-data Operator = Equals | NotEquals
+data Operator = Equals | NotEquals | Plus
     deriving(Show)
 
 data CodeToken = 
@@ -33,6 +33,7 @@ data CodeToken =
     | NL
     | Include String
     | Return [CodeToken]
+    | Assigment String [CodeToken]
     deriving(Show)
 
 tokenToCode :: CodeToken -> String
@@ -49,6 +50,7 @@ tokenToCode Semicolon = ";"
 tokenToCode NL = "\n"
 tokenToCode (Include v) = "#include " ++ v ++ "\n"
 tokenToCode (Return code) = "return " ++ tokensToCode code ++ ";"
+tokenToCode (Assigment var code) = var ++ "=" ++ tokensToCode code
 
 tokensToCode :: [CodeToken] -> String
 tokensToCode [] = ""
@@ -80,3 +82,4 @@ litToCode (CharLit val) = show val
 opToCode :: Operator -> String
 opToCode Equals = "=="
 opToCode NotEquals = "!="
+opToCode Plus = "+"

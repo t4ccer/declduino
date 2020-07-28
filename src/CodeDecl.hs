@@ -6,9 +6,19 @@ import CodeGen
 import Data.Text (pack)
 import Data.Yaml 
 import Prelude hiding ((>>))
+import Data.String
+
+data BoardType = 
+      ESP32
+    | UnknownBoard String
+    deriving(Show, Eq)
+
+instance IsString BoardType where
+    fromString "esp32" = ESP32
+    fromString x = UnknownBoard x
 
 data Device = Device
-    { board :: String
+    { board :: BoardType
     , device_name::String
     , ssid::String
     , pass::String
@@ -19,7 +29,7 @@ data Device = Device
     deriving(Show)
 instance FromJSON Device where
     parseJSON (Object v) = do
-        b  <- v .: pack "board"
+        str_b  <- v .: pack "board"
         n  <- v .: pack "name"
         s  <- v .: pack "ssid"
         pa <- v .: pack "pass"
@@ -27,7 +37,7 @@ instance FromJSON Device where
         po <- v .: pack "port"
         c  <- v .: pack "components"
         return Device 
-            { board = b
+            { board = fromString str_b
             , device_name = n
             , ssid = s
             , pass = pa
@@ -40,35 +50,70 @@ instance FromJSON Device where
 data ComponentType = 
       DigitalOutput
     | DigitalInput
+    | UnknownComponentType String
     deriving(Show, Eq)    
 
-data Component = Component
-    { component_type::ComponentType
-    , component_name::String
-    , pin::Int
-    }
+instance IsString ComponentType where
+    fromString "digital-output" = DigitalOutput
+    fromString "digital-input" = DigitalInput
+    fromString x = UnknownComponentType x
+
+data ReportMode = 
+      OnChange
+    | UnknownReportMode String
+    deriving(Show, Eq)
+
+instance IsString ReportMode where
+    fromString "on-change" = OnChange
+    fromString x = UnknownReportMode x
+
+data Component = 
+      DigitalOutputComponent
+      { component_name :: String
+      , pin :: Int
+      }
+    | DigitalInputComponent
+      { component_name :: String
+      , pin :: Int
+      , reports :: [ReportMode]
+      }
+    | UnknownComponent String
     deriving(Show)
 
 instance FromJSON Component where
     parseJSON (Object v) = do
-        t <- v .: pack "type"
         n <- v .: pack "name"
-        p <- v .: pack "pin"
-        return Component 
-            { component_type = to_type t
-            , component_name = n
-            , pin = p
-            }
-        where
-            to_type "digital-output" = DigitalOutput
-            to_type _ = error "Component type parse error"
+        str_t <- v .: pack "type"
+        let t = fromString str_t
+
+        case t of
+            DigitalOutput -> do
+                p <- v .: pack "pin"
+                return DigitalOutputComponent 
+                    { component_name = n
+                    , pin = p
+                    }
+            DigitalInput -> do
+                p <- v .: pack "pin"
+                r_strs <- v .: pack "reports"
+                return DigitalInputComponent 
+                    { component_name = n
+                    , pin = p
+                    , reports = fmap fromString r_strs
+                    }
     parseJSON _ = error "Component parse error"
 
+-- For do noatation
+infixr 0 >>
+(>>) :: a -> [a] -> [a]
+(>>) a = (<>) [a]
 
+end :: [a]
+end = mempty
 
 deviceToCode :: Device -> [CodeToken]
 deviceToCode dev
-    | board dev == "esp32" = do
+    | board dev == ESP32 = do
         Include "\"WiFi.h\""
         Include "<PubSubClient.h>"
 
@@ -76,7 +121,8 @@ deviceToCode dev
         Semicolon
         VarDecl "PubSubClient" "client" [Variable "espClient"]
         Semicolon
-        end 
+        end
+        <> globals
         <> funcs 
         <> do
         Function Void "callback" [Argument "char*" "topic",Argument "byte*" "message", Argument "unsigned int" "length"] conds
@@ -99,10 +145,12 @@ deviceToCode dev
             <> pins)
         end
         <> (do
-        Function Void "loop" [] (do
+        Function Void "loop" [] ((do
             Call "client.loop" []
             Semicolon
+            NL
             end)
+            <> loopHandls)
         end)
         
     | otherwise = error "Unsupported board"
@@ -111,67 +159,136 @@ deviceToCode dev
         pass' = pass dev
         mqtt' = mqtt dev
         port' = port dev
-        funcs = map componentToFunc $ components dev
+        funcs = map (componentToCallback dev) $ components dev
         conds = map (componentToCallbackCond dev) $ components dev
         subs  = concatMap (componentToSubs dev) $ components dev
-        pins  = concatMap componentToPinMode $ components dev
+        pins  = concatMap (componentToPinMode dev) $ components dev
+        loopHandls = concatMap (componentToLoopHandle dev) $ components dev
+        globals = concatMap (componentToGlobals dev) $ components dev
 
+
+componentToLoopHandle :: Device -> Component -> [CodeToken]
+componentToLoopHandle dev comp = case board dev of
+    ESP32 -> case comp of
+        DigitalOutputComponent {} -> do
+            end
+        DigitalInputComponent {} -> do
+            Call func_name []
+            Semicolon
+            NL
+            end
+        _ -> undefined
+    UnknownBoard x -> error ("Unknown board " ++ x)
+    where
+        func_name = "handle_" ++ component_name comp
 
 componentToCallbackCond :: Device -> Component -> CodeToken
-componentToCallbackCond dev comp = 
-    If [Call "String" [Variable "topic"], Op Equals, Value (StringLit ("declduino/"++device_name dev++"/"++component_name comp))] (do 
-        Call "handle_led" [Variable "message", Variable "length"]
-        Semicolon
-        NL
-        end)
+componentToCallbackCond dev comp = case board dev of
+    ESP32 -> case comp of
+        DigitalOutputComponent {} ->
+            If [Call "String" [Variable "topic"], Op Equals, Value (StringLit ("declduino/"++device_name dev++"/"++component_name comp))] (do 
+                Call func_name [Variable "message", Variable "length"]
+                Semicolon
+                NL
+                end)
+        DigitalInputComponent {} -> NL
+        _ -> undefined
+    UnknownBoard x -> error ("Unknown board " ++ x)
+    where
+        func_name = "handle" ++ component_name comp
 
-componentToFunc :: Component -> CodeToken
-componentToFunc comp
-    | component_type comp == DigitalOutput = 
-        Function Void funcName [Argument "byte*" "message", Argument "unsigned int" "length"] (do
+
+componentToCallback :: Device -> Component -> CodeToken
+componentToCallback dev comp = case board dev of
+    ESP32 -> case comp of 
+        DigitalOutputComponent _ c_pin ->
+            Function Void func_name [Argument "byte*" "message", Argument "unsigned int" "length"] (do
             If [Value (Variable "length"), Op NotEquals, Value (IntLit 1)] (do
                 Return[]
                 end)
             If [Value (Variable "message[0]"), Op Equals, Value (CharLit '1')] (do
-                Call "digitalWrite" [IntLit pin', Variable "HIGH"] 
+                Call "digitalWrite" [IntLit c_pin, Variable "HIGH"] 
                 Semicolon 
                 NL
                 end)
             Else (do 
                 If [Value (Variable "message[0]"), Op Equals, Value (CharLit '0')] (do
-                    Call "digitalWrite" [IntLit pin', Variable "LOW"] 
+                    Call "digitalWrite" [IntLit c_pin, Variable "LOW"] 
                     Semicolon
                     NL
                     end)
                 end)
             end)
-    | otherwise = error "Unsupported device"
-        where
-            pin' = pin comp
-            funcName = "handle_" ++ component_name comp
+        DigitalInputComponent _ c_pin reps ->
+            Function Void func_name [] (do
+                VarDecl "int" "new_state" []
+                Semicolon
+                Assigment "new_state" [Call "digitalRead" [IntLit c_pin]]
+                Semicolon
+                NL
+                If [Value (Variable "new_state"), Op NotEquals,  Value (Variable (component_name comp ++ "_state_" ++ show c_pin))] (do
+                    Assigment (component_name comp ++ "_state_" ++ show c_pin) [Value (Variable "new_state")]
+                    Semicolon
+                    NL
+                    VarDecl "char" "x[2]" []
+                    Semicolon
+                    NL
+                    Assigment "x[0]" [Value (CharLit '0'), Op Plus, Value (Variable "new_state")]
+                    Semicolon
+                    Assigment "x[1]" [Value (IntLit 0)]
+                    Semicolon
+                    NL
+                    Call "client.publish" [StringLit ("declduino/"++device_name dev++"/"++component_name comp), Variable "x"]
+                    Semicolon
+                    NL
+                    Call "delay" [IntLit 10]
+                    Semicolon
+                    end)
+                end)
+        UnknownComponent x -> error ("Unknown component "++x)
+    UnknownBoard x -> error ("Unknown board " ++ x)
+    where
+        func_name = "handle_" ++ component_name comp
 
-componentToPinMode :: Component -> [CodeToken]
-componentToPinMode comp 
-    | component_type comp == DigitalOutput = do
-         Call "pinMode" [IntLit (pin comp), Variable "OUTPUT"] 
-         Semicolon 
-         NL
-         end
-    
-    | otherwise = error "Unsopported device"
+componentToGlobals :: Device -> Component -> [CodeToken]
+componentToGlobals dev comp = case board dev of
+    ESP32 -> case comp of 
+        DigitalOutputComponent {} -> do
+            end
+        DigitalInputComponent _ c_pin _ -> do
+            VarDecl "int" (component_name comp ++ "_state_" ++ show c_pin) [Variable "LOW"]
+            Semicolon 
+            NL
+            end
+        UnknownComponent x -> error ("Unknown component "++x)
+    UnknownBoard x -> error ("Unknown board " ++ x)
+
+componentToPinMode :: Device -> Component -> [CodeToken]
+componentToPinMode dev comp = case board dev of
+    ESP32 -> case comp of 
+        DigitalOutputComponent _ c_pin -> do
+            Call "pinMode" [IntLit c_pin, Variable "OUTPUT"] 
+            Semicolon 
+            NL
+            end
+        DigitalInputComponent _ c_pin _ -> do
+            Call "pinMode" [IntLit c_pin, Variable "INPUT"] 
+            Semicolon 
+            NL
+            end
+        UnknownComponent x -> error ("Unknown component "++x)
+    UnknownBoard x -> error ("Unknown board " ++ x)
+
 
 componentToSubs :: Device -> Component -> [CodeToken]
-componentToSubs dev comp 
-    | component_type comp == DigitalOutput = do
-        Call "client.subscribe" [StringLit ("declduino/"++device_name dev++"/"++component_name comp)]
-        Semicolon 
-        NL
-        end
-    | otherwise = error "Unsopported device"
-
-infixr 0 >>
-(>>) :: a -> [a] -> [a]
-(>>) a = (<>) [a]
-
-end :: [a]
-end = mempty
+componentToSubs dev comp  = case board dev of
+    ESP32 -> case comp of 
+        DigitalOutputComponent _ _ -> do
+            Call "client.subscribe" [StringLit ("declduino/"++device_name dev++"/"++component_name comp)]
+            Semicolon 
+            NL
+            end
+        DigitalInputComponent {} -> do
+            end
+        UnknownComponent x -> error ("Unknown component "++x)
+    UnknownBoard x -> error ("Unknown board " ++ x)

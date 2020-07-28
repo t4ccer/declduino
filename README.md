@@ -10,7 +10,8 @@ More will be added soon
 
 ## Features
 
-- DigitalOutput (LEDs, switches)
+- Digital output (LEDs, relays)
+- Digital input (Buttons, switches)
 
 ## Usage
 ```
@@ -102,7 +103,6 @@ void loop()
 
 ### Code related
 - Use propper eDSL for code generating
-- Add support for CLI arguments for board type etc
 - Check for name confilcts in component names
 
 ## Contribution
