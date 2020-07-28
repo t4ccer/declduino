@@ -12,6 +12,19 @@ More will be added soon
 
 - DigitalOutput (LEDs, switches)
 
+## Usage
+```
+declduino [OPTIONS] [FILES]
+
+OPTIONS:
+  -s --ssid=<wifi-ssid>    Overrides WiFI SSID
+  -p --pass=<wifi-pass>    Overrides WiFi password
+  -m --mqtt=<mqtt-addr>    Overrides MQTT broker address
+  -d --board=<board-type>  Overrides board type
+  -n --name=<device-name>  Overrides device name
+  -h --help                Take a guess
+```
+
 ## Sample
 ```yaml
 board: esp32
