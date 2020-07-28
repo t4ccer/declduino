@@ -4,7 +4,7 @@
 module Parameters where
 
 import System.Console.CmdArgs
-import CodeDecl
+import Board
 import Data.String
 
 data Parameters = Parameters 

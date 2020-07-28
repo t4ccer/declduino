@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 38694c2fe161169e190ffc28dca8838a0776b7a7ee1f915cbd97b18c64266c7b
+-- hash: 31fc3009722dfc6930cc82f79b13f78fef6d60c10b3f77c9583c6ea27c058e81
 
 name:           declduino
 version:        0.1.0.0
@@ -26,6 +26,8 @@ source-repository head
 
 library
   exposed-modules:
+      Board
+      Board.ESP32
       CodeDecl
       CodeGen
       Parameters
