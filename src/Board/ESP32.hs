@@ -202,6 +202,5 @@ componentToCallback dev comp = case comp of
                     end)
 
                 end
-            gen_reporter _ = error "Reporter not implemented"
     where
         func_name = "handle_" ++ component_name comp
