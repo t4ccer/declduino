@@ -79,7 +79,6 @@ componentToLoopHandle _ comp = case comp of
         Semicolon
         NL
         end
-    UnknownComponent x -> error ("Unknown component "++x)
     where
         func_name = "handle_" ++ component_name comp
 
@@ -92,7 +91,6 @@ componentToCallbackCond dev comp = case comp of
             NL
             end)
     DigitalInputComponent {} -> NL
-    UnknownComponent x -> error ("Unknown component "++x)
     where
         func_name = "handle" ++ component_name comp
 
@@ -108,7 +106,6 @@ componentToGlobals _ comp =  case comp of
         Semicolon 
         NL
         end
-    UnknownComponent x -> error ("Unknown component "++x)
 
 componentToPinMode :: Device -> Component -> [CodeToken]
 componentToPinMode _ comp = case comp of 
@@ -122,7 +119,6 @@ componentToPinMode _ comp = case comp of
         Semicolon 
         NL
         end
-    UnknownComponent x -> error ("Unknown component "++x)
 
 componentToSubs :: Device -> Component -> [CodeToken]
 componentToSubs dev comp  = case comp of 
@@ -133,7 +129,6 @@ componentToSubs dev comp  = case comp of
         end
     DigitalInputComponent {} -> do
         end
-    UnknownComponent x -> error ("Unknown component "++x)
 
 componentToCallback :: Device -> Component -> CodeToken
 componentToCallback dev comp = case comp of 
@@ -208,6 +203,5 @@ componentToCallback dev comp = case comp of
 
                 end
             gen_reporter _ = error "Reporter not implemented"
-    UnknownComponent x -> error ("Unknown component "++x)
     where
         func_name = "handle_" ++ component_name comp

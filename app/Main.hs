@@ -6,35 +6,44 @@ import Parameters
 import Data.Yaml
 import System.Exit
 import System.Console.CmdArgs (cmdArgs)
+import Control.Monad
 
 main :: IO ()
 main = do 
     params <- cmdArgs parameters
-    if null (p_files params) then do
+    let names = p_files params
+    if null names then do
         putStrLn "Run declduino -h for usage info"
         exitWith (ExitFailure 1)
     else do
-        decoded <- mapM decodeFileEither $ p_files params
-        let applied = fmap (fmap (applyParameters params)) decoded
-        let codes = map (fmap deviceToCode) applied
-        let ino_names = map ((++".ino") . head . wordsWhen ('.' ==)) $ p_files params
-        mapM_ (\ (x, y, z) -> toFile x y z) $ zip3 (p_files params) ino_names codes
-        putStrLn ""
+        devices <- mapM decodeYamlFile names
+        let applied = fmap (>>= applyParameters params) devices
+        let codes = fmap (>>= deviceToCode) applied
+        zipWithM_ toFile names codes
+        exitSuccess
 
-toFile :: FilePath -> FilePath -> Either ParseException String -> IO()
-toFile _ f (Right x) = do 
-    writeFile f x
-    putStrLn ("Created file " ++ f)
-toFile o _ (Left x) = do
-    putStrLn ("Error with processing " ++ o)
-    putStrLn ("\t"++show x)
+decodeYamlFile :: FilePath -> IO (Result Device)
+decodeYamlFile f = do 
+    dec <- decodeFileEither f
+    case dec of 
+        (Left _) -> return $ Left YamlParserError
+        (Right v) -> return v
+
+
+
+changeExt :: String -> String -> String
+changeExt ext = (++"."++ext) . head . wordsWhen ('.' ==)
+
+toFile :: FilePath -> Result String -> IO()
+toFile f (Left e) = putStrLn ("An error occurred when processing '"++f++"': " ++ show e)
+toFile f (Right c) = do
+    putStrLn ("Created file " ++ n)
+    writeFile n c 
+    where 
+        n = changeExt "ino" f
 
 wordsWhen     :: (Char -> Bool) -> String -> [String]
 wordsWhen p s =  case dropWhile p s of
     "" -> []
     s' -> w : wordsWhen p s''
         where (w, s'') = break p s'
-
-eitherToCode :: Either ParseException Device -> IO String
-eitherToCode (Left v) = putStrLn ("File parsing error: " ++ show v) >> exitWith (ExitFailure 1)
-eitherToCode (Right v) = return $ deviceToCode v
