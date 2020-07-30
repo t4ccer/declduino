@@ -17,7 +17,7 @@ data Literal =
 data Argument = Argument String String
     deriving(Show)
 
-data Operator = Equals | NotEquals | Plus | Minus | GreaterOrEquals
+data Operator = Equals | NotEquals | Plus | Minus | GreaterOrEquals | Negate
     deriving(Show)
 
 data CodeToken = 
@@ -85,3 +85,4 @@ opToCode NotEquals = "!="
 opToCode Plus = "+"
 opToCode Minus = "-"
 opToCode GreaterOrEquals = ">="
+opToCode Negate = "!"

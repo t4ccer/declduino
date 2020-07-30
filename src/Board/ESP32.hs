@@ -28,19 +28,27 @@ deviceToCode dev = tokensToCode $ do
     <> funcs 
     <> do
     Function Void "callback" [Argument "char*" "topic",Argument "byte*" "message", Argument "unsigned int" "length"] conds
-    Function Void "setup" [] ((do 
-        Call "WiFi.begin" [StringLit ssid', StringLit pass']
-        Semicolon
-        WhileLoop [Call "WiFi.status" [], Op NotEquals, Value (Variable "WL_CONNECTED")] (do
-            Call "delay" [IntLit 500]
+    Function Void "reconnect" [] (do
+        If [Call "WiFi.status" [], Op NotEquals, Value (Variable "WL_CONNECTED")] (do
+            Call "WiFi.begin" [StringLit ssid', StringLit pass']
             Semicolon
-            NL
+            WhileLoop [Call "WiFi.status" [], Op NotEquals, Value (Variable "WL_CONNECTED")] (do
+                Call "delay" [IntLit 500]
+                Semicolon
+                NL
+                end)
             end)
-        Call "client.setServer" [StringLit mqtt', IntLit port'] 
-        Semicolon
-        Call "client.setCallback" [Variable "callback"] 
-        Semicolon
-        Call "client.connect" [StringLit "esp32"] 
+        WhileLoop [Op Negate, Call "client.connected" []] (do
+            Call "client.setServer" [StringLit mqtt', IntLit port'] 
+            Semicolon
+            Call "client.setCallback" [Variable "callback"] 
+            Semicolon
+            Call "client.connect" [StringLit ("declduion-" ++ device_name dev)] 
+            Semicolon
+            end)
+        end)
+    Function Void "setup" [] ((do 
+        Call "reconnect" []
         Semicolon
         end)
         <> subs
