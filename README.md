@@ -86,24 +86,5 @@ void loop()
     client.loop();
 }
 ```
-
-## TODO
-### Features
-- Add support for more boards
-    - esp8266
-    - and more...
-- Add support for more components
-    - ds18b20 (1-wire thermometer)
-    - OTA upload
-    - Disconnect detection
-    - and more...
-
-### Ecosystem
-- All-in-one docker build container (will build yaml to binary)
-
-### Code related
-- Use propper eDSL for code generating
-- Check for name confilcts in component names
-
 ## Contribution
-Feel free to add some features, ideas or fix bugs
+Feel free to add some features, ideas or fix bugs. Tasks that are waiting to complete are listed [here](https://github.com/t4ccer/declduino/projects/1).
