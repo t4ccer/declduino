@@ -92,7 +92,7 @@ componentToCallbackCond dev comp = case comp of
             end)
     DigitalInputComponent {} -> NL
     where
-        func_name = "handle" ++ component_name comp
+        func_name = "handle_" ++ component_name comp
 
 componentToGlobals :: Device -> Component -> [CodeToken]
 componentToGlobals _ comp =  case comp of 
