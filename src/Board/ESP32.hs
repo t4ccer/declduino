@@ -149,6 +149,13 @@ componentToCallback dev comp = case comp of
                 NL
                 end)
             end)
+        Else (do 
+            If [Value (Variable "message[0]"), Op Equals, Value (CharLit 's')] (do
+                Call "digitalWrite" [IntLit c_pin, Variable("digitalRead("++ show c_pin ++")^1")] 
+                Semicolon
+                NL
+                end)
+            end)
         end)
     DigitalInputComponent _ c_pin reps ->
             Function Void func_name [] (concatMap gen_reporter $ nub reps)
