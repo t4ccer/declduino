@@ -22,7 +22,7 @@ OPTIONS:
   -p --pass=<wifi-pass>    Overrides WiFi password
   -m --mqtt=<mqtt-addr>    Overrides MQTT broker address
      --port=<mqtt-port>    Overrides MQTT broker port
-  -d --board=<board-type>  Overrides board type
+  -b --board=<board-type>  Overrides board type
   -n --name=<device-name>  Overrides device name
   -h --help                Take a guess
 ```
@@ -42,7 +42,7 @@ components:
 ```
 Will transform into (formatted):
 ```c++
-#include <WiFi.h>
+#include "WiFi.h"
 #include <PubSubClient.h>
 
 WiFiClient espClient;
