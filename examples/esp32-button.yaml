@@ -10,3 +10,4 @@ components:
   pin: 15
   reporters:
   - type: on-change
+    debounce: 10

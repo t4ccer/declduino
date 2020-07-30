@@ -168,7 +168,7 @@ componentToCallback dev comp = case comp of
     DigitalInputComponent _ c_pin reps ->
             Function Void func_name [] (concatMap gen_reporter $ nub reps)
         where 
-            gen_reporter OnChange = do
+            gen_reporter (OnChange d)= do
                     VarDecl "int" "new_state" []
                     Semicolon
                     Assigment "new_state" [Call "digitalRead" [IntLit c_pin]]
@@ -189,7 +189,7 @@ componentToCallback dev comp = case comp of
                         Call "client.publish" [StringLit ("declduino/"++device_name dev++"/"++component_name comp), Variable "x"]
                         Semicolon
                         NL
-                        Call "delay" [IntLit 10]
+                        Call "delay" [IntLit d]
                         Semicolon
                         end)
                     end

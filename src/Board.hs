@@ -15,6 +15,7 @@ data Error =
     deriving (Show, Eq)
 
 type Seconds = Int
+type Miliseconds = Int
 
 type Result a = Either Error a
 toResult ::  Error -> Either ParseException (Result BoardType) -> Result BoardType
@@ -27,7 +28,7 @@ data BoardType =
     deriving(Show, Eq)
 
 data Reporter = 
-      OnChange
+      OnChange Miliseconds
     | OnTime Seconds
     deriving(Show, Eq)
 
@@ -59,7 +60,9 @@ instance {-# OVERLAPS #-} FromJSON (Result Reporter) where
     parseJSON (Object v) = do
         t <- v .: pack "type"
         if
-            | t == "on-change" -> return $ Right OnChange
+            | t == "on-change" -> do
+                d <- v .: pack "debounce"
+                return $ Right (OnChange d)
             | t == "on-time" -> do
                 i <- v .: pack "interval"
                 return $ Right (OnTime i)
