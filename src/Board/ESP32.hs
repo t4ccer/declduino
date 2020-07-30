@@ -18,6 +18,9 @@ deviceToCode :: Device -> String
 deviceToCode dev = tokensToCode $ do
     Include "\"WiFi.h\""
     Include "<PubSubClient.h>"
+    Include "<ESPmDNS.h>"
+    Include "<WiFiUdp.h>"
+    Include "<ArduinoOTA.h>"
 
     VarDecl "WiFiClient" "espClient" []
     Semicolon
@@ -50,6 +53,15 @@ deviceToCode dev = tokensToCode $ do
     Function Void "setup" [] ((do 
         Call "reconnect" []
         Semicolon
+
+        Call "ArduinoOTA.onEnd" [Variable "[](){delay(1000);ESP.restart();}"]
+        Semicolon
+        Call "ArduinoOTA.setPort" [IntLit 3232]
+        Semicolon
+        Call "ArduinoOTA.begin" []
+        Semicolon
+
+
         end)
         <> subs
         <> pins)
@@ -57,6 +69,9 @@ deviceToCode dev = tokensToCode $ do
     <> (do
     Function Void "loop" [] ((do
         Call "client.loop" []
+        Semicolon
+        NL
+        Call "ArduinoOTA.handle" []
         Semicolon
         NL
         end)
