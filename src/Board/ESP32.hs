@@ -68,6 +68,8 @@ deviceToCode dev = tokensToCode $ do
     end
     <> (do
     Function Void "loop" [] ((do
+        Call "reconnect" []
+        Semicolon
         Call "client.loop" []
         Semicolon
         NL
