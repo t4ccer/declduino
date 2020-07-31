@@ -16,11 +16,16 @@ main = do
         putStrLn "Run declduino -h for usage info"
         exitWith (ExitFailure 1)
     else do
-        devices <- mapM decodeYamlFile names
-        let applied = fmap (>>= applyParameters params) devices
-        let codes = fmap (>>= deviceToCode) applied
+        decoded <- mapM decodeYamlFile names
+        let codes = fmap (>>= processDevice params) decoded
         zipWithM_ toFile names codes
         exitSuccess
+
+processDevice :: Parameters -> Device  -> Result String
+processDevice params dev = do
+    applied <- applyParameters params dev
+    checked <- hasNameConfilcts applied
+    deviceToCode checked
 
 decodeYamlFile :: FilePath -> IO (Result Device)
 decodeYamlFile f = do 

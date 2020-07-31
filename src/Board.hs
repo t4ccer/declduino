@@ -6,12 +6,14 @@ import Data.Text (pack, unpack)
 import Data.Yaml 
 import Prelude hiding ((>>))
 import Data.String
+import Data.List (nub, (\\))
 
 data Error =
       YamlParserError
     | UnknownBoardError String
     | UnknownComponentError String
     | UnknownReporterError String
+    | ComponentNameConfilctError String
     deriving (Show, Eq)
 
 type Seconds = Int
@@ -124,3 +126,14 @@ instance {-# OVERLAPS #-} FromJSON (Result Device) where
                             , components = cs
                             }
     parseJSON _ =  return $ Left YamlParserError
+
+hasNameConfilcts :: Device -> Result Device
+hasNameConfilcts dev = if null repetitions
+        then Right dev
+        else Left $ ComponentNameConfilctError (head repetitions)
+        where 
+            names = map component_name $ components dev
+            repetitions = names \\ nub names
+
+hasDuplicates :: (Ord a) => [a] -> Bool
+hasDuplicates xs = length (nub xs) /= length xs
