@@ -7,6 +7,7 @@ import Data.Yaml
 import System.Exit
 import System.Console.CmdArgs (cmdArgs)
 import Control.Monad
+import Error
 
 main :: IO ()
 main = do 
@@ -33,8 +34,6 @@ decodeYamlFile f = do
     case dec of 
         (Left _) -> return $ Left YamlParserError
         (Right v) -> return v
-
-
 
 changeExt :: String -> String -> String
 changeExt ext = (++"."++ext) . head . wordsWhen ('.' ==)

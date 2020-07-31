@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 31fc3009722dfc6930cc82f79b13f78fef6d60c10b3f77c9583c6ea27c058e81
+-- hash: ac376e6ef815c76c52df595c4af3da09be1c666224adff693c8ddb8106e314f4
 
 name:           declduino
 version:        0.1.0.0
@@ -30,6 +30,7 @@ library
       Board.ESP32
       CodeDecl
       CodeGen
+      Error
       Parameters
   other-modules:
       Paths_declduino

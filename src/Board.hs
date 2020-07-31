@@ -7,24 +7,11 @@ import Data.Yaml
 import Prelude hiding ((>>))
 import Data.String
 import Data.List (nub, (\\))
-
-data Error =
-      YamlParserError
-    | UnknownBoardError String
-    | UnknownComponentError String
-    | UnknownReporterError String
-    | ComponentNameConfilctError String
-    | BoardSpecificError String
-    deriving (Show, Eq)
+import Error
 
 type Seconds = Int
 type Miliseconds = Int
-
 type Result a = Either Error a
-toResult ::  Error -> Either ParseException (Result BoardType) -> Result BoardType
-toResult e (Left _) = Left e
-toResult _ (Right v) = v
-
 
 data BoardType = 
       ESP32
@@ -144,6 +131,3 @@ hasNameConfilcts dev = if null repetitions
         where 
             names = map component_name $ components dev
             repetitions = names \\ nub names
-
-hasDuplicates :: (Ord a) => [a] -> Bool
-hasDuplicates xs = length (nub xs) /= length xs

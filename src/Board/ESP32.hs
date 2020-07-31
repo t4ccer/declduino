@@ -6,6 +6,7 @@ import Board
 import CodeGen
 import Prelude hiding ((>>))
 import Data.List (nub)
+import Error
 
 -- For do noatation
 (>>) :: a -> [a] -> [a]
