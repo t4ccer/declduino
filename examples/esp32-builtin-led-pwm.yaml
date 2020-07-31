@@ -1,0 +1,10 @@
+board: esp32
+name: led-dimmer
+ssid: wifi-name
+pass: wifi-pass
+mqtt: mqtt-broker-server
+port: 1883
+components:
+- type: pwm-output
+  name: led
+  pin: 2

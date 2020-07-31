@@ -14,8 +14,13 @@ import Data.List (nub)
 end :: [a]
 end = mempty
 
-deviceToCode :: Device -> String
-deviceToCode dev = tokensToCode $ do
+deviceToCode :: Device -> Result String
+deviceToCode dev = do
+    withAssignedPWM <- assignPWMChannels dev
+    codify withAssignedPWM
+
+codify :: Device -> Result String
+codify dev = return $ tokensToCode $ do
     Include "\"WiFi.h\""
     Include "<PubSubClient.h>"
     Include "<ESPmDNS.h>"
@@ -95,6 +100,21 @@ deviceToCode dev = tokensToCode $ do
         loopHandls = getCodeChunks componentToLoopHandle   dev
         globals    = getCodeChunks componentToGlobals      dev
 
+assignPWMChannels :: Device -> Result Device
+assignPWMChannels dev 
+    | length pwms > 16 = Left (BoardSpecificError ("ESP32 can support only 16 pwm outputs, You declared " ++ show (length pwms)))
+    | otherwise = return $ dev { components=assigned }
+    where
+        pwms = [PWMOutputComponent n p (-1) | (PWMOutputComponent n p _) <- components dev]
+        assigned = assign (components dev) 0
+        assign [x] i = case x of
+            PWMOutputComponent n p _ -> [PWMOutputComponent n p i]
+            v -> [v]
+        assign (x:xs) i = case x of
+            PWMOutputComponent n p _ -> PWMOutputComponent n p i : assign xs (i+1)
+            v -> v : assign xs i 
+        assign [] _ = []
+
 componentToLoopHandle :: Device -> Component -> [CodeToken]
 componentToLoopHandle _ comp = case comp of
     DigitalOutputComponent {} -> do
@@ -104,12 +124,20 @@ componentToLoopHandle _ comp = case comp of
         Semicolon
         NL
         end
+    PWMOutputComponent {} -> do
+        end
     where
         func_name = "handle_" ++ component_name comp
 
 componentToCallbackCond :: Device -> Component -> CodeToken
 componentToCallbackCond dev comp = case comp of
     DigitalOutputComponent {} ->
+        If [Call "String" [Variable "topic"], Op Equals, Value (StringLit ("declduino/"++device_name dev++"/"++component_name comp))] (do 
+            Call func_name [Variable "message", Variable "length"]
+            Semicolon
+            NL
+            end)
+    PWMOutputComponent {} ->
         If [Call "String" [Variable "topic"], Op Equals, Value (StringLit ("declduino/"++device_name dev++"/"++component_name comp))] (do 
             Call func_name [Variable "message", Variable "length"]
             Semicolon
@@ -131,6 +159,8 @@ componentToGlobals _ comp =  case comp of
         Semicolon 
         NL
         end
+    PWMOutputComponent {} -> do
+        end
 
 componentToPinMode :: Device -> Component -> [CodeToken]
 componentToPinMode _ comp = case comp of 
@@ -144,6 +174,13 @@ componentToPinMode _ comp = case comp of
         Semicolon 
         NL
         end
+    PWMOutputComponent _ p c -> do
+        Call "ledcSetup" [IntLit c, IntLit 5000, IntLit p]
+        Semicolon
+        NL
+        Call "ledcAttachPin" [IntLit p, IntLit c]
+        Semicolon
+        end
 
 componentToSubs :: Device -> Component -> [CodeToken]
 componentToSubs dev comp  = case comp of 
@@ -153,6 +190,11 @@ componentToSubs dev comp  = case comp of
         NL
         end
     DigitalInputComponent {} -> do
+        end
+    PWMOutputComponent {} -> do
+        Call "client.subscribe" [StringLit ("declduino/"++device_name dev++"/"++component_name comp)]
+        Semicolon 
+        NL
         end
 
 componentToCallback :: Device -> Component -> CodeToken
@@ -234,5 +276,25 @@ componentToCallback dev comp = case comp of
                     end)
 
                 end
+    PWMOutputComponent _ _ c ->
+        Function Void func_name [Argument "byte*" "message", Argument "unsigned int" "length"] (do
+            If [Value (Variable "length"), Op NotEquals, Value (IntLit 2)] (do
+                Return[]
+                end)
+            VarDecl "int" "value" [IntLit 0]
+            Semicolon
+            AddTo "value" [Value (IntLit 16), Op Asterisk, Trenary 
+                [Value (Variable "message[0]"), Op LessOrEquals, Value (CharLit '9')] 
+                [Value (Variable "message[0]"), Op Minus, Value (CharLit '0')] 
+                [Value (Variable "message[0]"), Op Minus, Value (CharLit 'a'), Op Plus, Value (IntLit 10)]]
+            Semicolon
+            AddTo "value" [Trenary 
+                [Value (Variable "message[1]"), Op LessOrEquals, Value (CharLit '9')] 
+                [Value (Variable "message[1]"), Op Minus, Value (CharLit '0')] 
+                [Value (Variable "message[1]"), Op Minus, Value (CharLit 'a'), Op Plus, Value (IntLit 10)]]
+            Semicolon
+            Call "ledcWrite" [IntLit c, Variable "value"]
+            Semicolon
+            end) 
     where
         func_name = "handle_" ++ component_name comp

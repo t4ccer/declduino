@@ -17,7 +17,7 @@ data Literal =
 data Argument = Argument String String
     deriving(Show)
 
-data Operator = Equals | NotEquals | Plus | Minus | GreaterOrEquals | Negate
+data Operator = Equals | NotEquals | Plus | Minus | GreaterOrEquals | Negate | Asterisk | LessOrEquals
     deriving(Show)
 
 data CodeToken = 
@@ -34,6 +34,8 @@ data CodeToken =
     | Include String
     | Return [CodeToken]
     | Assigment String [CodeToken]
+    | AddTo String [CodeToken]
+    | Trenary [CodeToken] [CodeToken] [CodeToken]
     deriving(Show)
 
 tokenToCode :: CodeToken -> String
@@ -51,6 +53,8 @@ tokenToCode NL = "\n"
 tokenToCode (Include v) = "#include " ++ v ++ "\n"
 tokenToCode (Return code) = "return " ++ tokensToCode code ++ ";"
 tokenToCode (Assigment var code) = var ++ "=" ++ tokensToCode code
+tokenToCode (AddTo var code) = var ++ "+=" ++ tokensToCode code
+tokenToCode (Trenary cond code1 code2) = tokensToCode cond ++ "?" ++ tokensToCode code1 ++ ":" ++ tokensToCode code2
 
 tokensToCode :: [CodeToken] -> String
 tokensToCode [] = ""
@@ -85,4 +89,6 @@ opToCode NotEquals = "!="
 opToCode Plus = "+"
 opToCode Minus = "-"
 opToCode GreaterOrEquals = ">="
+opToCode LessOrEquals = "<="
 opToCode Negate = "!"
+opToCode Asterisk = "*"

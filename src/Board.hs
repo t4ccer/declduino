@@ -14,6 +14,7 @@ data Error =
     | UnknownComponentError String
     | UnknownReporterError String
     | ComponentNameConfilctError String
+    | BoardSpecificError String
     deriving (Show, Eq)
 
 type Seconds = Int
@@ -43,6 +44,11 @@ data Component =
       { component_name :: String
       , pin :: Int
       , reports :: [Reporter]
+      }
+    | PWMOutputComponent
+      { component_name :: String
+      , pin :: Int
+      , channel :: Int
       }
     deriving(Show)
 
@@ -87,6 +93,10 @@ instance {-# OVERLAPS #-} FromJSON (Result Component) where
                     (Left e) -> return $ Left e
                     (Right rs) ->
                         return $ Right (DigitalInputComponent n p rs)
+            | t == "pwm-output" -> do
+                p <- v .: pack "pin"
+                return $ Right (PWMOutputComponent n p (-1)) 
+
             | otherwise -> 
                 return $ Left (UnknownComponentError t)
     parseJSON _ =  return $ Left YamlParserError
