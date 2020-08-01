@@ -18,6 +18,7 @@ dependencies:
 - text >= 1.2.3.2
 - bytestring
 - cmdargs
+- transformers
 
 library:
   source-dirs: src

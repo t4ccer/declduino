@@ -6,5 +6,7 @@ data Error =
     | UnknownComponentError String
     | UnknownReporterError String
     | ComponentNameConfilctError String
+    | ParametersError String
+    | FileReadError String
     | BoardSpecificError String
     deriving (Show, Eq)

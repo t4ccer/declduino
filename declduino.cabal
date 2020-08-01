@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: ac376e6ef815c76c52df595c4af3da09be1c666224adff693c8ddb8106e314f4
+-- hash: 73561b19a2ed2d5d2f3d8b8205e7467bd7680969c44eb6f33ff4db88b75b5edc
 
 name:           declduino
 version:        0.1.0.0
@@ -41,6 +41,7 @@ library
     , bytestring
     , cmdargs
     , text >=1.2.3.2
+    , transformers
     , yaml
   default-language: Haskell2010
 
@@ -57,5 +58,6 @@ executable declduino
     , cmdargs
     , declduino
     , text >=1.2.3.2
+    , transformers
     , yaml
   default-language: Haskell2010

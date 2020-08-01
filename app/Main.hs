@@ -4,29 +4,32 @@ import CodeDecl (deviceToCode)
 import Board
 import Parameters
 import Data.Yaml
-import System.Exit
 import System.Console.CmdArgs (cmdArgs)
-import Control.Monad
 import Error
+import Control.Monad.Trans.Except
 
 main :: IO ()
-main = do 
-    params <- cmdArgs parameters
-    let names = p_files params
-    if null names then do
-        putStrLn "Run declduino -h for usage info"
-        exitWith (ExitFailure 1)
-    else do
-        decoded <- mapM decodeYamlFile names
-        let codes = fmap (>>= processDevice params) decoded
-        zipWithM_ toFile names codes
-        exitSuccess
+main = do
+    res <- run
+    case res of
+        Left err -> print err
+        Right xs -> mapM_ (uncurry toFile) xs
 
-processDevice :: Parameters -> Device  -> Result String
-processDevice params dev = do
-    applied <- applyParameters params dev
-    checked <- hasNameConfilcts applied
-    deviceToCode checked
+-- run :: IO (Result [String])
+run :: IO (Result [(String, FilePath)])
+run = runExceptT $ do
+    params            <- ExceptT $ return <$> cmdArgs parameters
+    _                 <- ExceptT $ verifyParams params
+    decodedDevices    <- ExceptT $ sequenceA <$> mapM decodeYamlFile (p_files params)
+    devicesWithParams <- ExceptT $ return $ traverse (applyParameters params) decodedDevices
+    _                 <- ExceptT $ return $ traverse hasNameConfilcts devicesWithParams
+    codes             <- ExceptT $ sequenceA <$> traverse (return . deviceToCode) devicesWithParams
+    ExceptT $ return $ return $ zip codes (p_files params)
+
+verifyParams :: Parameters -> IO (Result Parameters)
+verifyParams params 
+    | null $ p_files params = return $ Left $ ParametersError "No files provided"
+    | otherwise = return $ Right params
 
 decodeYamlFile :: FilePath -> IO (Result Device)
 decodeYamlFile f = do 
@@ -38,9 +41,8 @@ decodeYamlFile f = do
 changeExt :: String -> String -> String
 changeExt ext = (++"."++ext) . head . wordsWhen ('.' ==)
 
-toFile :: FilePath -> Result String -> IO()
-toFile f (Left e) = putStrLn ("An error occurred when processing '"++f++"': " ++ show e)
-toFile f (Right c) = do
+toFile :: String -> FilePath -> IO()
+toFile c f = do
     putStrLn ("Created file " ++ n)
     writeFile n c 
     where 
