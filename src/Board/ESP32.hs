@@ -64,6 +64,8 @@ codify dev = return $ tokensToCode $ do
         Semicolon
         Call "ArduinoOTA.setPort" [IntLit 3232]
         Semicolon
+        Call "ArduinoOTA.setHostname" [StringLit ("declduino_" ++ device_name dev)]
+        Semicolon
         Call "ArduinoOTA.begin" []
         Semicolon
 
