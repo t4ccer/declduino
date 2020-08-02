@@ -57,3 +57,9 @@ mqttConnect = declareFunExtern "client.connect"
 
 mqttLoop :: Fun (IO ())
 mqttLoop = declareFunExtern "client.loop"
+
+mqttPublish :: Fun(String -> Ptr Char -> IO ())
+mqttPublish = declareFunExtern "client.publish"
+
+millis :: Fun (IO Int)
+millis = declareFunExtern "millis"

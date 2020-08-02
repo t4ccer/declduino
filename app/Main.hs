@@ -9,6 +9,22 @@ import System.Console.CmdArgs (cmdArgs)
 import Error
 import Control.Monad.Trans.Except
 
+testMain :: IO ()
+testMain = do
+    res <- testRun
+    case res of
+        Left err -> print err
+        Right xs -> uncurry toFile xs
+
+testRun :: IO (Either Error (String, FilePath))
+testRun = runExceptT $ do
+    let fname = "examples/esp32-button.yaml"
+    let inoName = changeExt "ino" fname
+    device <- ExceptT $ decodeYamlFile fname
+    _      <- ExceptT $ return $ hasNameConfilcts device
+    code   <- ExceptT $ return $ generateCode device
+    ExceptT $ return $ return (code, inoName)
+
 main :: IO ()
 main = do
     res <- run

@@ -8,8 +8,8 @@ import CodeGenerators.LanguageDSL.ESP32Specific
 import CodeGenerators.LanguageDSL.CGenerator
 import Board
 import Error
-import Prelude hiding ((+), (==), (*), (-), (/=))
-import qualified Prelude ((+))
+import Prelude hiding ((+), (==), (*), (-), (/=), (>=))
+import qualified Prelude ((+), (*))
 import Data.Char (ord)
 
 generateCode :: Device -> Result String
@@ -45,7 +45,6 @@ base dev =  generate $ do
     comment "Globals"
     espClient :: LVal (Class WiFiClient) <- declareGlobal "espClient"
     client :: LVal (Class PubSubClient) <- declareGlobal "client(espClient)" -- Do not change name
-
     allGlobals
 
     restart :: Fun (IO ())
@@ -54,7 +53,6 @@ base dev =  generate $ do
             scall restartESP
 
     allCallbacks
-
     callback :: Fun (Ptr Char -> Ptr Byte -> Int -> IO ()) 
         <- defineNewFun "callback" ("topic" :> "message" :> "length") $ \ f topic message len -> do
             comment "Callback conditions"
@@ -110,7 +108,6 @@ digitalOutputCallback pin' = do
     _ :: Fun (Ptr Byte -> Int -> IO()) 
         <- defineNewFun "handle_led" ("msg" :> "len") $ \_ msg len -> do
             iff (len == lit 1) (do
-                -- stmt $ trustMe ("digitalWrite("++show pin ++", msg[0]-'0')")
                 v <- newvar "x"
                 v =: msg ! lit 0
 
@@ -142,7 +139,6 @@ componentToCallbacks dev comp = case comp of
         _ :: Fun (Ptr Byte -> Int -> IO()) 
             <- defineNewFun ("handle_" ++ n) ("msg" :> "len") $ \_ msg len -> do
                 iff (len == lit 1) (do
-                    -- stmt $ trustMe ("digitalWrite("++show pin ++", msg[0]-'0')")
                     v <- newvar "x"
                     v =: msg ! lit 0
 
@@ -165,19 +161,34 @@ componentToCallbacks dev comp = case comp of
                 noCodeS
         noCode
             where
-                state = externVar (n ++ "_state")
                 reporters = flatS genReporters
                 genReporters = map genReporter reps
                 genReporter (OnChange d) = do
                     newState <- newvar "newState"
                     newState =: call digitalRead (lit pin')
                     iff (newState /= state) (do
-                        x :: LVal (Char) <- newvar "x[2]" --TODO refactor
-                        stmt $ trustMe "x[0] = newState"
-                        stmt $ trustMe "x[1] = 0"
-                        stmt $ trustMe ("client.publish(\"" ++ ("declduino/"++device_name dev++"/"++n) ++ "\" x);")
+                        state =: newState
+                        x :: LVal (Ptr Char) <- "x" =. arrayMalloc (lit 2)
+                        x ! lit 0 =: call intToChar newState
+                        x ! lit 1 =: call intToChar (lit 0)
+                        scall mqttPublish (lit ("declduino/"++device_name dev++"/"++n)) x
                         noCodeS)
-                genReporter (OnTime i) = undefined
+                    where
+                        state = externVar (n ++ "_state")
+
+                genReporter (OnTime i) = do
+                    ms :: LVal Int <- newvar "ms"
+                    ms =: call millis
+                    iff (ms - prevMs >= lit (1000 Prelude.* i)) (do
+                        newState <- newvar "newState"
+                        x :: LVal (Ptr Char) <- "x" =. arrayMalloc (lit 2)
+                        x ! lit 0 =: call intToChar newState
+                        x ! lit 1 =: call intToChar (lit 0)
+                        scall mqttPublish (lit ("declduino/"++device_name dev++"/"++n)) x
+                        noCodeS)
+                    noCodeS
+                    where
+                        prevMs = externVar (n ++ "_previousMillis")
     _ -> undefined
 
 componentToSubscriptions :: Device -> Component -> [(String, String)]
