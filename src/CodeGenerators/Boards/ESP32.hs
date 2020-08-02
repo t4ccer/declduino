@@ -94,13 +94,14 @@ base dev =  generate $ do
             scall reconnect
             scall mqttLoop
             scall arduinoOTALoop
+            allLoopHandlers
             
     noCode --Yes, it really has to be here
     where
         getCodeChunks f d = map (f d) $ components d
         allGlobals = flat $ getCodeChunks componentToGlobals dev
         allCallbacks = flat $ getCodeChunks componentToCallbacks dev
-        allLoopHandlers = flat $ getCodeChunks componentToLoopHandlers dev
+        allLoopHandlers = flatS $ getCodeChunks componentToLoopHandlers dev
         allIncludes = flat $ getCodeChunks componentToIncludes dev
         allSubs = flatS $ subscriptionsToCode $ concatMap (componentToSubscriptions dev) $ components dev
         allSetups = flatS $ map (componentToSetup dev) $ components dev
@@ -121,13 +122,13 @@ componentToIncludes _ comp = case comp of
     DigitalInputComponent {}  -> noCode
     PWMOutputComponent {}     -> noCode
 
-componentToLoopHandlers :: Device -> Component -> Decl ()
+componentToLoopHandlers :: Device -> Component -> Stmt () ()
 componentToLoopHandlers _ comp = case comp of
-    DigitalOutputComponent {} -> noCode
+    DigitalOutputComponent {} -> noCodeS
     DigitalInputComponent {}  -> do 
-        stmtToDecl $ stmt $ trustMe ("handle_" ++ component_name comp)
-        noCode
-    PWMOutputComponent {}     -> noCode
+        stmt $ trustMe ("handle_" ++ component_name comp ++ "()")
+        noCodeS
+    PWMOutputComponent {}     -> noCodeS
 
 componentToGlobals :: Device -> Component -> Decl ()
 componentToGlobals _ comp = case comp of
@@ -178,9 +179,10 @@ componentToCallbacks dev comp = case comp of
                     iff (newState /= state) (do
                         state =: newState
                         x :: LVal (Ptr Char) <- "x" =. arrayMalloc (lit 2)
-                        x ! lit 0 =: call intToChar newState
+                        x ! lit 0 =: call intToChar (newState + lit (ord '0'))
                         x ! lit 1 =: call intToChar (lit 0)
                         scall mqttPublish (lit ("declduino/"++device_name dev++"/"++n)) x
+                        scall delay (lit d)
                         noCodeS)
                     where
                         state = externVar (n ++ "_state")
@@ -191,7 +193,7 @@ componentToCallbacks dev comp = case comp of
                     iff (ms - prevMs >= lit (1000 Prelude.* i)) (do
                         newState <- newvar "newState"
                         x :: LVal (Ptr Char) <- "x" =. arrayMalloc (lit 2)
-                        x ! lit 0 =: call intToChar newState
+                        x ! lit 0 =: call intToChar (newState + lit (ord '0'))
                         x ! lit 1 =: call intToChar (lit 0)
                         scall mqttPublish (lit ("declduino/"++device_name dev++"/"++n)) x
                         noCodeS)
