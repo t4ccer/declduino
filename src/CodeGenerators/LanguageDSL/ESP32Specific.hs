@@ -72,3 +72,11 @@ ledcSetup = declareFunExtern "ledcSetup"
 
 ledcAttachPin :: Fun (Int -> Int -> IO ())
 ledcAttachPin = declareFunExtern "ledcAttachPin"
+
+pinMode :: Fun (Int -> Int -> IO ())
+pinMode = declareFunExtern "pinMode"
+
+output :: RVal Int
+output = lit 2
+input :: RVal Int
+input = lit 1

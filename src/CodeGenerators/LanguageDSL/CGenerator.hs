@@ -292,13 +292,14 @@ not x = Val $ parens $ "!" ++ unVal x
 binop :: Type a => String -> Val lr a -> Val lr' a -> RVal a
 binop op x y = Val $ parens $ unVal x <+> op <+> unVal y
 
-(+), (-), (*), (/)
+(+), (-), (*), (/), (^)
   :: NumType a
   => Val lr a -> Val lr' a -> RVal a
 (+) = binop "+"
 (-) = binop "-"
 (*) = binop "*"
 (/) = binop "/"
+(^) = binop "^"
 
 ------------------------------------------------------------------------------
 -- Strings

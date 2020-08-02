@@ -8,7 +8,7 @@ import CodeGenerators.LanguageDSL.ESP32Specific
 import CodeGenerators.LanguageDSL.CGenerator
 import Board
 import Error
-import Prelude hiding ((+), (==), (*), (-), (/=), (>=))
+import Prelude hiding ((+), (==), (*), (-), (/=), (>=), (^))
 import qualified Prelude ((+), (*))
 import Data.Char (ord)
 
@@ -110,8 +110,10 @@ base dev =  generate $ do
 
 componentToSetup :: Device -> Component -> Stmt () ()
 componentToSetup _ comp = case comp of
-    DigitalOutputComponent {} -> noCodeS
-    DigitalInputComponent {}  -> noCodeS
+    DigitalOutputComponent _ pin' -> do
+        scall pinMode (lit pin') output
+    DigitalInputComponent _ pin' _  -> do
+        scall pinMode (lit pin') input
     PWMOutputComponent _ p c  -> do
         scall ledcSetup (lit c) (lit 5000) (lit p)
         scall ledcAttachPin (lit p) (lit c)
@@ -153,13 +155,14 @@ componentToCallbacks dev comp = case comp of
                     v =: msg ! lit 0
 
                     ifte (v == lit (Byte $ ord '0'))
-                        (scall digitalWrite (lit pin') (lit 1))
+                        (scall digitalWrite (lit pin') (lit 0))
                         (ifte (v == lit (Byte $ ord '1'))
                             (scall digitalWrite (lit pin') (lit 1)) 
                             (iff (v == lit (Byte $ ord 's'))
                                 (do 
                                     x <- newvar "x"
                                     x =: call digitalRead (lit pin')
+                                    x =: x ^ lit 1
                                     scall digitalWrite (lit pin') x
                                     )))
                     )
