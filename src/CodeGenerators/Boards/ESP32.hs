@@ -71,11 +71,12 @@ base dev =  generate $ do
                     )
 
             comment "MQTT"
-            iff (call mqttConnected /= lit 0)
+            iff (call mqttConnected == lit 0)
                 (do
                     scall mqttSetServer (lit (mqtt dev)) (lit (port dev)) -- Port is also parameter
                     scall mqttSetCallback (funPtr callback)
                     scall mqttConnect (lit hostname)
+                    mqttSubs
                     )
 
     setup :: Fun (IO ())
@@ -86,8 +87,7 @@ base dev =  generate $ do
             scall arduinoOTASetPort (lit 3232) 
             scall arduinoOTASetHostname (lit hostname)
             scall arduinoOTABegin
-            comment "MQTT"
-            mqttSubs
+            allSetups
     
     loop :: Fun (IO ())
         <- defineNewFun "loop" () $ \loop -> do
@@ -103,8 +103,17 @@ base dev =  generate $ do
         allLoopHandlers = flat $ getCodeChunks componentToLoopHandlers dev
         allIncludes = flat $ getCodeChunks componentToIncludes dev
         allSubs = flatS $ subscriptionsToCode $ concatMap (componentToSubscriptions dev) $ components dev
+        allSetups = flatS $ map (componentToSetup dev) $ components dev
         mqttSubs = flatS $ subscriptionsToMQTT $ concatMap (componentToSubscriptions dev) $ components dev
         hostname = "declduino_"++device_name dev
+
+componentToSetup :: Device -> Component -> Stmt () ()
+componentToSetup _ comp = case comp of
+    DigitalOutputComponent {} -> noCodeS
+    DigitalInputComponent {}  -> noCodeS
+    PWMOutputComponent _ p c  -> do
+        scall ledcSetup (lit c) (lit 5000) (lit p)
+        scall ledcAttachPin (lit p) (lit c)
 
 componentToIncludes :: Device -> Component -> Decl ()
 componentToIncludes _ comp = case comp of
@@ -195,7 +204,7 @@ componentToCallbacks dev comp = case comp of
                 state_pwm =: lit 0
                 forFromTo "i" (lit 0) (lit 1) len $ \i -> do
                     state_pwm =: state_pwm * lit 10
-                    state_pwm =: state_pwm + call toInt (msg ! i)
+                    state_pwm =: state_pwm + call toInt (msg ! i) - lit (ord '0')
                     noCodeS 
                 scall ledcWrite (lit channel') (state_pwm * state_mode)
                 noCodeS
