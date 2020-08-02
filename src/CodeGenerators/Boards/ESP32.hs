@@ -41,6 +41,8 @@ base dev =  generate $ do
     include "<ESPmDNS.h>"
     include "<WiFiUdp.h>"
     include "<ArduinoOTA.h>"
+    comment "Includes"
+    allIncludes
 
     comment "Globals"
     espClient :: LVal (Class WiFiClient) <- declareGlobal "espClient"
@@ -92,50 +94,45 @@ base dev =  generate $ do
             scall reconnect
             scall mqttLoop
             scall arduinoOTALoop
-
+            
     noCode --Yes, it really has to be here
     where
         getCodeChunks f d = map (f d) $ components d
         allGlobals = flat $ getCodeChunks componentToGlobals dev
         allCallbacks = flat $ getCodeChunks componentToCallbacks dev
+        allLoopHandlers = flat $ getCodeChunks componentToLoopHandlers dev
+        allIncludes = flat $ getCodeChunks componentToIncludes dev
         -- allSubs :: Decl ()
         allSubs = flatS $ subscriptionsToCode $ concatMap (componentToSubscriptions dev) $ components dev
         mqttSubs = flatS $ subscriptionsToMQTT $ concatMap (componentToSubscriptions dev) $ components dev
         hostname = "declduino_"++device_name dev
 
-digitalOutputCallback :: Int -> Decl ()
-digitalOutputCallback pin' = do
-    _ :: Fun (Ptr Byte -> Int -> IO()) 
-        <- defineNewFun "handle_led" ("msg" :> "len") $ \_ msg len -> do
-            iff (len == lit 1) (do
-                v <- newvar "x"
-                v =: msg ! lit 0
+componentToIncludes :: Device -> Component -> Decl ()
+componentToIncludes _ comp = case comp of
+    DigitalOutputComponent {} -> noCode
+    DigitalInputComponent {}  -> noCode
+    PWMOutputComponent {}     -> noCode
 
-                ifte (v == lit (Byte $ ord '0'))
-                    (scall digitalWrite (lit pin') (lit 1))
-                    (ifte (v == lit (Byte $ ord '1'))
-                        (scall digitalWrite (lit pin') (lit 1)) 
-                        (iff (v == lit (Byte $ ord 's'))
-                            (do 
-                                x <- newvar "x"
-                                x =: call digitalRead (lit pin')
-                                scall digitalWrite (lit pin') x
-                                )))
-                )
-    noCode --Yes, it really has to be here
+componentToLoopHandlers :: Device -> Component -> Decl ()
+componentToLoopHandlers _ comp = case comp of
+    DigitalOutputComponent {} -> noCode
+    DigitalInputComponent {}  -> do 
+        stmtToDecl $ stmt $ trustMe ("handle_" ++ component_name comp)
+        noCode
+    PWMOutputComponent {}     -> noCode
 
 componentToGlobals :: Device -> Component -> Decl ()
 componentToGlobals _ comp = case comp of
     DigitalOutputComponent {} -> noCode
-    DigitalInputComponent {} -> do 
+    DigitalInputComponent {}  -> do 
         _ :: LVal Int <- declareGlobal (component_name comp ++ "_state(0)")
         _ :: LVal Int <- declareGlobal (component_name comp ++ "_previousMillis(0)")
         noCode
-    PWMOutputComponent {} -> noCode
+    PWMOutputComponent {}     -> noCode
         
 componentToCallbacks :: Device -> Component -> Decl ()
 componentToCallbacks dev comp = case comp of
-    DigitalOutputComponent n pin' -> do
+    DigitalOutputComponent n pin'     -> do
         _ :: Fun (Ptr Byte -> Int -> IO()) 
             <- defineNewFun ("handle_" ++ n) ("msg" :> "len") $ \_ msg len -> do
                 iff (len == lit 1) (do
@@ -155,8 +152,8 @@ componentToCallbacks dev comp = case comp of
                     )
         noCode --Yes, it really has to be here
     DigitalInputComponent n pin' reps -> do
-        _ :: Fun (Ptr Byte -> Int -> IO()) 
-            <- defineNewFun ("handle_" ++ n) ("msg" :> "len") $ \_ msg len -> do
+        _ :: Fun (IO ())
+            <- defineNewFun ("handle_" ++ n) () $ \_ -> do
                 reporters
                 noCodeS
         noCode
@@ -189,17 +186,13 @@ componentToCallbacks dev comp = case comp of
                     noCodeS
                     where
                         prevMs = externVar (n ++ "_previousMillis")
-    _ -> undefined
+    PWMOutputComponent {}             -> undefined
 
 componentToSubscriptions :: Device -> Component -> [(String, String)]
 componentToSubscriptions dev comp = case comp of
     DigitalOutputComponent n _ -> [("declduino/"++device_name dev++"/"++n, "handle_"++n)]
-    DigitalInputComponent {} -> []
-    PWMOutputComponent {} -> undefined
-
-
-
-
+    DigitalInputComponent {}   -> []
+    PWMOutputComponent {}      -> undefined
 
 subscriptionsToCode :: [(String, String)] -> [Stmt r ()]
 subscriptionsToCode = map (stmt . trustMe . \(t, f) -> "if (String(topic) == \"" ++ t ++ "\") " ++ f ++ "(message, length)")
