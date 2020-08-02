@@ -71,7 +71,7 @@ module CodeGenerators.LanguageDSL
   -- * Comments
   , comment
   , noCode, noCodeS
-  , externVar, intToChar
+  , externVar, intToChar, toInt
   , arrayMalloc
   ) where
 import qualified Prelude ()

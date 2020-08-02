@@ -771,6 +771,9 @@ noCodeS = comment ""
 intToChar :: Fun (Int -> IO (Char))
 intToChar = fun $ trustMe "(char)"
 
+toInt :: Fun (a -> IO Int)
+toInt = fun $ trustMe "(int)"
+
 
 mallocFun :: Fun (Int -> IO (Ptr ()))
 mallocFun = fun $ trustMe "malloc"

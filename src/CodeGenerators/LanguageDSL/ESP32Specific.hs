@@ -63,3 +63,6 @@ mqttPublish = declareFunExtern "client.publish"
 
 millis :: Fun (IO Int)
 millis = declareFunExtern "millis"
+
+ledcWrite :: Fun(Int -> Int -> IO ())
+ledcWrite = declareFunExtern "ledcWrite"

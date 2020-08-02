@@ -18,7 +18,7 @@ testMain = do
 
 testRun :: IO (Either Error (String, FilePath))
 testRun = runExceptT $ do
-    let fname = "examples/esp32-button.yaml"
+    let fname = "examples/esp32-builtin-led-pwm.yaml"
     let inoName = changeExt "ino" fname
     device <- ExceptT $ decodeYamlFile fname
     _      <- ExceptT $ return $ hasNameConfilcts device

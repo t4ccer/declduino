@@ -14,8 +14,8 @@ import Data.Char (ord)
 
 generateCode :: Device -> Result String
 generateCode dev = do
-    _ <- assignPWMChannels dev
-    return $ base dev
+    assigned <- assignPWMChannels dev
+    return $ base assigned
 
 assignPWMChannels :: Device -> Result Device
 assignPWMChannels dev 
@@ -73,7 +73,7 @@ base dev =  generate $ do
             comment "MQTT"
             iff (call mqttConnected /= lit 0)
                 (do
-                    scall mqttSetServer (lit (mqtt dev)) (lit 1883) -- Port is also parameter
+                    scall mqttSetServer (lit (mqtt dev)) (lit (port dev)) -- Port is also parameter
                     scall mqttSetCallback (funPtr callback)
                     scall mqttConnect (lit hostname)
                     )
@@ -102,7 +102,6 @@ base dev =  generate $ do
         allCallbacks = flat $ getCodeChunks componentToCallbacks dev
         allLoopHandlers = flat $ getCodeChunks componentToLoopHandlers dev
         allIncludes = flat $ getCodeChunks componentToIncludes dev
-        -- allSubs :: Decl ()
         allSubs = flatS $ subscriptionsToCode $ concatMap (componentToSubscriptions dev) $ components dev
         mqttSubs = flatS $ subscriptionsToMQTT $ concatMap (componentToSubscriptions dev) $ components dev
         hostname = "declduino_"++device_name dev
@@ -128,7 +127,11 @@ componentToGlobals _ comp = case comp of
         _ :: LVal Int <- declareGlobal (component_name comp ++ "_state(0)")
         _ :: LVal Int <- declareGlobal (component_name comp ++ "_previousMillis(0)")
         noCode
-    PWMOutputComponent {}     -> noCode
+    PWMOutputComponent {}     -> do 
+        _ :: LVal Int <- declareGlobal (component_name comp ++ "_state_pwm(0)")
+        _ :: LVal Int <- declareGlobal (component_name comp ++ "_state_mode(0)")
+        noCode
+
         
 componentToCallbacks :: Device -> Component -> Decl ()
 componentToCallbacks dev comp = case comp of
@@ -186,13 +189,43 @@ componentToCallbacks dev comp = case comp of
                     noCodeS
                     where
                         prevMs = externVar (n ++ "_previousMillis")
-    PWMOutputComponent {}             -> undefined
+    PWMOutputComponent n _ channel'   -> do
+        _ :: Fun (Ptr Byte -> Int -> IO()) 
+            <- defineNewFun ("handle_" ++ n ++ "_pwm") ("msg" :> "len") $ \_ msg len -> do
+                state_pwm =: lit 0
+                forFromTo "i" (lit 0) (lit 1) len $ \i -> do
+                    state_pwm =: state_pwm * lit 10
+                    state_pwm =: state_pwm + call toInt (msg ! i)
+                    noCodeS 
+                scall ledcWrite (lit channel') (state_pwm * state_mode)
+                noCodeS
+        noCode
+        _ :: Fun (Ptr Byte -> Int -> IO()) 
+            <- defineNewFun ("handle_" ++ n ++ "_mode") ("msg" :> "len") $ \_ msg len -> do
+                iff (len == lit 1) (do
+
+                    state_mode =: call toInt (msg ! lit 0) - lit (ord '0')
+
+                    scall ledcWrite (lit channel') (state_pwm * state_mode)
+                    noCodeS)
+                noCodeS
+        noCode
+        where
+            state_pwm :: LVal Int
+            state_pwm  = externVar (n ++ "_state_pwm")
+            state_mode :: LVal Int
+            state_mode = externVar (n ++ "_state_mode")
 
 componentToSubscriptions :: Device -> Component -> [(String, String)]
 componentToSubscriptions dev comp = case comp of
-    DigitalOutputComponent n _ -> [("declduino/"++device_name dev++"/"++n, "handle_"++n)]
+    DigitalOutputComponent n _ -> [("declduino/"++devName++"/"++n, "handle_"++n)]
     DigitalInputComponent {}   -> []
-    PWMOutputComponent {}      -> undefined
+    PWMOutputComponent n _ _   -> 
+        [ ("declduino/"++devName++"/"++n++"/pwm", "handle_"++n++"_pwm")
+        , ("declduino/"++devName++"/"++n++"/mode", "handle_"++n++"_mode")
+        ]
+    where
+        devName = device_name dev
 
 subscriptionsToCode :: [(String, String)] -> [Stmt r ()]
 subscriptionsToCode = map (stmt . trustMe . \(t, f) -> "if (String(topic) == \"" ++ t ++ "\") " ++ f ++ "(message, length)")
