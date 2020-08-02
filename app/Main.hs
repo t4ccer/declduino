@@ -1,6 +1,7 @@
 module Main where
 
-import CodeDecl (deviceToCode)
+-- import CodeDecl (deviceToCode)
+import CodeGenerators (generateCode)
 import Board
 import Parameters
 import Data.Yaml
@@ -23,7 +24,7 @@ run = runExceptT $ do
     decodedDevices    <- ExceptT $ sequenceA <$> mapM decodeYamlFile (p_files params)
     devicesWithParams <- ExceptT $ return $ traverse (applyParameters params) decodedDevices
     _                 <- ExceptT $ return $ traverse hasNameConfilcts devicesWithParams
-    codes             <- ExceptT $ sequenceA <$> traverse (return . deviceToCode) devicesWithParams
+    codes             <- ExceptT $ sequenceA <$> traverse (return . generateCode) devicesWithParams
     ExceptT $ return $ return $ zip codes (p_files params)
 
 verifyParams :: Parameters -> IO (Result Parameters)
