@@ -115,7 +115,7 @@ componentToSetup _ comp = case comp of
     DigitalInputComponent _ pin' _  -> do
         scall pinMode (lit pin') input
     PWMOutputComponent _ p c  -> do
-        scall ledcSetup (lit c) (lit 5000) (lit p)
+        scall ledcSetup (lit c) (lit 5000) (lit 8)
         scall ledcAttachPin (lit p) (lit c)
 
 componentToIncludes :: Device -> Component -> Decl ()
