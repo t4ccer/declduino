@@ -7,4 +7,4 @@ port: 1883
 components:
 - type: pwm-output
   name: led
-  pin: 21
+  pin: 2

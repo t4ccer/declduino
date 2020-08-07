@@ -1,7 +1,7 @@
 
 module CodeGenerators where
 import Board
-import qualified CodeGenerators.Boards.ESP32 as ESP32
+import qualified CodeGenerators.ESP32 as ESP32
 
 generateCode :: Device -> Result String
 generateCode dev = case board dev of

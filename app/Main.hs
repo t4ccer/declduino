@@ -1,6 +1,5 @@
 module Main where
 
--- import CodeDecl (deviceToCode)
 import CodeGenerators (generateCode)
 import Board
 import Parameters
@@ -8,6 +7,7 @@ import Data.Yaml
 import System.Console.CmdArgs (cmdArgs)
 import Error
 import Control.Monad.Trans.Except
+
 
 testMain :: IO ()
 testMain = do

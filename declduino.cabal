@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: c14a24f20b3b911aeeea81cab444cfda7952cb3c2debecba9959ea4548f1ef14
+-- hash: 0d5cc4e272dcd806d569b5f1f129255c10a4c17bad4ef00d1679511db8b75e72
 
 name:           declduino
 version:        0.1.0.0
@@ -28,11 +28,7 @@ library
   exposed-modules:
       Board
       CodeGenerators
-      CodeGenerators.Board
-      CodeGenerators.Boards.ESP32
-      CodeGenerators.LanguageDSL
-      CodeGenerators.LanguageDSL.CGenerator
-      CodeGenerators.LanguageDSL.ESP32Specific
+      CodeGenerators.ESP32
       Error
       Parameters
   other-modules:
@@ -40,11 +36,10 @@ library
   hs-source-dirs:
       src
   build-depends:
-      base >=4.14.0 && <4.14.1
+      ardu-gen
+    , base >=4.14.0 && <4.14.1
     , bytestring
     , cmdargs
-    , containers
-    , mtl
     , text >=1.2.3.2
     , transformers
     , yaml
@@ -58,12 +53,11 @@ executable declduino
       app
   ghc-options: -threaded -rtsopts -with-rtsopts=-N -Wall -fwarn-incomplete-patterns
   build-depends:
-      base >=4.14.0 && <4.14.1
+      ardu-gen
+    , base >=4.14.0 && <4.14.1
     , bytestring
     , cmdargs
-    , containers
     , declduino
-    , mtl
     , text >=1.2.3.2
     , transformers
     , yaml

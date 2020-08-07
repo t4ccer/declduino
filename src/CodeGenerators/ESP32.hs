@@ -1,16 +1,19 @@
- {-# OPTIONS_GHC -fno-warn-unused-binds -fno-warn-unused-matches #-} --Becouse of dsl
+{-# OPTIONS_GHC -fno-warn-unused-binds -fno-warn-unused-matches #-} --Because of dsl
 {-# LANGUAGE ScopedTypeVariables #-}
 
--- module CodeGenerators.Boards.ESP32 (generateCode) where
-module CodeGenerators.Boards.ESP32  where
+module CodeGenerators.ESP32  where
     
-import CodeGenerators.LanguageDSL.ESP32Specific
-import CodeGenerators.LanguageDSL.CGenerator
+import ArduGen
+import ArduGen.Base
+import ArduGen.Arduino hiding (map)
+import ArduGen.ESP32
 import Board
 import Error
 import Prelude hiding ((+), (==), (*), (-), (/=), (>=), (^))
 import qualified Prelude ((+), (*))
 import Data.Char (ord)
+
+
 
 generateCode :: Device -> Result String
 generateCode dev = do
@@ -46,7 +49,7 @@ base dev =  generate $ do
 
     comment "Globals"
     espClient :: LVal (Class WiFiClient) <- declareGlobal "espClient"
-    client :: LVal (Class PubSubClient) <- declareGlobal "client(espClient)" -- Do not change name
+    client :: LVal (Class PubSubClient) <- declareGlobal "client" -- Do not change name
     allGlobals
 
     restart :: Fun (IO ())
@@ -71,16 +74,17 @@ base dev =  generate $ do
                     )
 
             comment "MQTT"
-            iff (call mqttConnected == lit 0)
+            iff (call (mqttConnected client) == lit 0)
                 (do
-                    scall mqttSetServer (lit (mqtt dev)) (lit (port dev)) -- Port is also parameter
-                    scall mqttSetCallback (funPtr callback)
-                    scall mqttConnect (lit hostname)
+                    scall (mqttSetServer client) (lit (mqtt dev)) (lit (port dev)) 
+                    scall (mqttSetCallback client) (funPtr callback)
+                    scall (mqttConnect client) (lit hostname)
                     mqttSubs
                     )
 
     setup :: Fun (IO ())
         <- defineNewFun "setup" () $ \setup -> do
+            client =: mqttInitializeClient espClient
             scall reconnect
             comment "OTA"
             scall arduinoOTAOnEnd $ funPtr restart
@@ -92,7 +96,7 @@ base dev =  generate $ do
     loop :: Fun (IO ())
         <- defineNewFun "loop" () $ \loop -> do
             scall reconnect
-            scall mqttLoop
+            scall (mqttLoop client)
             scall arduinoOTALoop
             allLoopHandlers
             
@@ -182,12 +186,13 @@ componentToCallbacks dev comp = case comp of
                     iff (newState /= state) (do
                         state =: newState
                         x :: LVal (Ptr Char) <- "x" =. arrayMalloc (lit 2)
-                        x ! lit 0 =: call intToChar (newState + lit (ord '0'))
-                        x ! lit 1 =: call intToChar (lit 0)
-                        scall mqttPublish (lit ("declduino/"++device_name dev++"/"++n)) x
+                        x ! lit 0 =: call toChar (newState + lit (ord '0'))
+                        x ! lit 1 =: call toChar (int 0)
+                        scall (mqttPublish client) (lit ("declduino/"++device_name dev++"/"++n)) x
                         scall delay (lit d)
                         noCodeS)
                     where
+                        client = externVar "client"
                         state = externVar (n ++ "_state")
 
                 genReporter (OnTime i) = do
@@ -196,12 +201,13 @@ componentToCallbacks dev comp = case comp of
                     iff (ms - prevMs >= lit (1000 Prelude.* i)) (do
                         newState <- newvar "newState"
                         x :: LVal (Ptr Char) <- "x" =. arrayMalloc (lit 2)
-                        x ! lit 0 =: call intToChar (newState + lit (ord '0'))
-                        x ! lit 1 =: call intToChar (lit 0)
-                        scall mqttPublish (lit ("declduino/"++device_name dev++"/"++n)) x
+                        x ! lit 0 =: call toChar (newState + lit (ord '0'))
+                        x ! lit 1 =: call toChar (int 0)
+                        scall (mqttPublish client) (lit ("declduino/"++device_name dev++"/"++n)) x
                         noCodeS)
                     noCodeS
                     where
+                        client = externVar "client"
                         prevMs = externVar (n ++ "_previousMillis")
     PWMOutputComponent n _ channel'   -> do
         _ :: Fun (Ptr Byte -> Int -> IO()) 
