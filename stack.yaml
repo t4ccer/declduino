@@ -3,4 +3,4 @@ packages:
 - .
 extra-deps:
 - github: t4ccer/ardu-gen
-  commit: a17fd748cd074ffd9f0fa2ec9512948d68970fdf 
+  commit: 7dcce4b677623be85f6229df20aa57210d31a0a1 

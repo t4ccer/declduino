@@ -5,6 +5,8 @@ module CodeGenerators.ESP32  where
     
 import ArduGen
 import ArduGen.Base
+import ArduGen.Libraries.PubSubClient
+import qualified ArduGen.Libraries.DS18b20 as DS
 import ArduGen.Arduino hiding (map)
 import ArduGen.ESP32
 import Board
@@ -13,7 +15,8 @@ import Prelude hiding ((+), (==), (*), (-), (/=), (>=), (^))
 import qualified Prelude ((+), (*))
 import Data.Char (ord)
 
-
+toStrPtr :: LVal a -> RVal (Ptr Char)
+toStrPtr v = trustMe ("String("++unVal v ++ ").c_str()")
 
 generateCode :: Device -> Result String
 generateCode dev = do
@@ -121,12 +124,20 @@ componentToSetup _ comp = case comp of
     PWMOutputComponent _ p c  -> do
         scall ledcSetup (lit c) (lit 5000) (lit 8)
         scall ledcAttachPin (lit p) (lit c)
+    DS18B20Component _ p _ _-> do
+        ow =: call DS.initializeOneWire (lit p)
+        sens =: DS.initializeDallasTemperature ow
+        noCodeS
+      where
+          ow = externVar (component_name comp ++ "_oneWire")
+          sens = externVar (component_name comp ++ "_sensors")
 
 componentToIncludes :: Device -> Component -> Decl ()
 componentToIncludes _ comp = case comp of
     DigitalOutputComponent {} -> noCode
     DigitalInputComponent {}  -> noCode
     PWMOutputComponent {}     -> noCode
+    DS18B20Component {}       -> DS.requiredIncludes 
 
 componentToLoopHandlers :: Device -> Component -> Stmt () ()
 componentToLoopHandlers _ comp = case comp of
@@ -135,6 +146,9 @@ componentToLoopHandlers _ comp = case comp of
         stmt $ trustMe ("handle_" ++ component_name comp ++ "()")
         noCodeS
     PWMOutputComponent {}     -> noCodeS
+    DS18B20Component {}       -> do 
+        stmt $ trustMe ("handle_" ++ component_name comp ++ "()")
+        noCodeS
 
 componentToGlobals :: Device -> Component -> Decl ()
 componentToGlobals _ comp = case comp of
@@ -147,7 +161,18 @@ componentToGlobals _ comp = case comp of
         _ :: LVal Int <- declareGlobal (component_name comp ++ "_state_pwm(0)")
         _ :: LVal Int <- declareGlobal (component_name comp ++ "_state_mode(0)")
         noCode
-
+    DS18B20Component n _ s r  -> do
+        _ :: LVal DS.OneWire <- declareGlobal (n ++ "_oneWire")
+        _ :: LVal DS.DallasTemperature <- declareGlobal (n ++ "_sensors")
+        _ :: LVal Int <- declareGlobal (component_name comp ++ "_previousMillis(0)")
+        declPrevs
+        noCode
+        where
+            declPrevs = flat $ map declPrev s
+            declPrev sens = do
+                _ :: LVal Double <- declareGlobal (n ++ "_state_" ++ sensor_name sens ++ "(0)")
+                noCode
+                --noCode
         
 componentToCallbacks :: Device -> Component -> Decl ()
 componentToCallbacks dev comp = case comp of
@@ -174,11 +199,11 @@ componentToCallbacks dev comp = case comp of
     DigitalInputComponent n pin' reps -> do
         _ :: Fun (IO ())
             <- defineNewFun ("handle_" ++ n) () $ \_ -> do
-                reporters
+                reporters'
                 noCodeS
         noCode
             where
-                reporters = flatS genReporters
+                reporters' = flatS genReporters
                 genReporters = map genReporter reps
                 genReporter (OnChange d) = do
                     newState <- newvar "newState"
@@ -235,6 +260,54 @@ componentToCallbacks dev comp = case comp of
             state_pwm  = externVar (n ++ "_state_pwm")
             state_mode :: LVal Int
             state_mode = externVar (n ++ "_state_mode")
+    DS18B20Component n _ sensors' reps     -> do
+        _ :: Fun (IO ()) 
+            <- defineNewFun ("handle_" ++ n) () $ \_ -> do
+                scall (DS.requestTemperatures sens)
+                reporters'
+        noCode
+        where
+            client = externVar "client"
+            sens = externVar (n++"_sensors")
+            reporters' = flatS $ map handleReporter reps
+            handleReporter (OnChange d) = do
+                handleSensorsOnChange
+                scall delay (lit d)
+            handleReporter (OnTime i) = do
+                ms :: LVal Int <- newvar "ms"
+                ms =: call millis
+                iff (ms - prevMs >= lit (1000 Prelude.* i)) $ do
+                    prevMs =: ms
+                    handleSensorsOnTime
+                where
+                    prevMs = externVar (n ++ "_previousMillis")
+            handleSensorsOnTime = flatS $ map handleSensorOnTime sensors'
+                where
+                    handleSensorOnTime s = do
+                        temp <- newvar "temp"
+                        temp =: call (DS.getTempCByIndex sens) (lit $ index s)
+                        scall (mqttPublish client) (lit ("declduino/thermo-one/thermo/" ++ sensor_name s)) (toStrPtr temp)
+            handleSensorsOnChange = flatS $ map handleSensorOnChange sensors'
+                where
+                    handleSensorOnChange s = do
+                        temp <- newvar "temp"
+                        temp =: call (DS.getTempCByIndex sens) (lit $ index s)
+                        iff (state /= temp) $ do
+                            state =: temp
+                            scall (mqttPublish client) (lit ("declduino/thermo-one/thermo/" ++ sensor_name s)) (toStrPtr temp) 
+                        where
+                            state = externVar (n ++ "_state_" ++ sensor_name s)
+
+                
+
+            -- handleSensors = flatS $ map handleSensor sensors'
+            -- handleSensor s = do
+                -- temp <- newvar "temp"
+                -- temp =: call (DS.getTempCByIndex sens) (lit $ index s)
+                -- x <- newvar "x"
+                -- x =: toStrPtr temp
+                -- scall (mqttPublish client) (lit ("declduino/thermo-one/thermo/" ++ sensor_name s)) x
+                -- noCodeS
 
 componentToSubscriptions :: Device -> Component -> [(String, String)]
 componentToSubscriptions dev comp = case comp of
@@ -244,6 +317,7 @@ componentToSubscriptions dev comp = case comp of
         [ ("declduino/"++devName++"/"++n++"/pwm", "handle_"++n++"_pwm")
         , ("declduino/"++devName++"/"++n++"/mode", "handle_"++n++"_mode")
         ]
+    DS18B20Component {}        -> []
     where
         devName = device_name dev
 

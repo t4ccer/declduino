@@ -37,8 +37,18 @@ data Component =
       , pin :: Int
       , channel :: Int
       }
+    | DS18B20Component
+    { component_name :: String
+    , pin :: Int
+    , sensors :: [DS18B20Sensor]
+    , reporters :: [Reporter]
+    }
     deriving(Show)
 
+data DS18B20Sensor = DS18B20Sensor 
+    { sensor_name :: String 
+    , index :: Int --TODO Add address option
+    } deriving(Show)
 
 data Device = Device
     { board :: BoardType
@@ -83,15 +93,33 @@ instance {-# OVERLAPS #-} FromJSON (Result Component) where
             | t == "pwm-output" -> do
                 p <- v .: pack "pin"
                 return $ Right (PWMOutputComponent n p (-1)) 
-
+            | t == "ds18b20" -> do
+                p  <- v .: pack "pin"
+                s  <- v .: pack "sensors"
+                rs <- v .: pack "reporters"
+                let rs' = sequenceA rs
+                let s' = sequenceA s
+                case rs' of
+                    (Left e) -> return $ Left e
+                    (Right rs'') -> case s' of
+                        (Left e) -> return $ Left e
+                        (Right s'') -> return $ Right $ DS18B20Component n p s'' rs''
+                
             | otherwise -> 
                 return $ Left (UnknownComponentError t)
     parseJSON _ =  return $ Left YamlParserError
 
+instance {-# OVERLAPS #-} FromJSON (Result DS18B20Sensor) where
+    parseJSON (Object v) = do
+        n <- v .: pack "name"
+        i <- v .: pack "index"
+        return $ Right $ DS18B20Sensor n i
+    parseJSON _ = return $ Left YamlParserError
 
 instance IsString (Result BoardType) where
     fromString "esp32" = Right ESP32
     fromString s = Left (UnknownBoardError s)
+
 instance {-# OVERLAPS #-} FromJSON (Result BoardType) where
     parseJSON (String t) = return $ fromString (unpack t)
     parseJSON _ =  return $ Left YamlParserError

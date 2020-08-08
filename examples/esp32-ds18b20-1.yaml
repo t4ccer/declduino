@@ -1,0 +1,16 @@
+board: esp32
+name: thermo-one
+ssid: wifi-name
+pass: wifi-pass
+mqtt: mqtt-broker-server
+port: 1883
+components:
+- type: ds18b20 
+  name: thermo
+  pin: 13
+  sensors:
+  - name: temp
+    index: 0
+  reporters:
+  - type: on-change
+    debounce: 10

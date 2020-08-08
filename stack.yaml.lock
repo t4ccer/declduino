@@ -5,16 +5,16 @@
 
 packages:
 - completed:
-    size: 11380
-    url: https://github.com/t4ccer/ardu-gen/archive/a17fd748cd074ffd9f0fa2ec9512948d68970fdf.tar.gz
+    size: 11682
+    url: https://github.com/t4ccer/ardu-gen/archive/7dcce4b677623be85f6229df20aa57210d31a0a1.tar.gz
     name: ardu-gen
     version: 0.1.0.0
-    sha256: 24012ecdd37d490d369ab2f12a4a3ffec7bcd458cc37fab9f5fc29aaf75e296c
+    sha256: 88980cda124741baed12a9626595630ab5c16a5de77cb2388fb7767c97ce8328
     pantry-tree:
-      size: 1429
-      sha256: 491372015d4578548c2ffcf6caca42779f9e8078099189f102bee9b200fe18b9
+      size: 1506
+      sha256: f31a10cd28f31411eee613c96feab9cbcaaa041875c07b86d49c7e6e8a345618
   original:
-    url: https://github.com/t4ccer/ardu-gen/archive/a17fd748cd074ffd9f0fa2ec9512948d68970fdf.tar.gz
+    url: https://github.com/t4ccer/ardu-gen/archive/7dcce4b677623be85f6229df20aa57210d31a0a1.tar.gz
 snapshots:
 - completed:
     size: 522655
