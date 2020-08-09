@@ -37,7 +37,8 @@ run :: IO (Result [(String, FilePath)])
 run = runExceptT $ do
     params            <- ExceptT $ return <$> cmdArgs parameters
     _                 <- ExceptT $ verifyParams params
-    decodedDevices    <- ExceptT $ sequenceA <$> mapM decodeYamlFile (p_files params)
+    let files = map (map (\x -> if x == '\\' then '/' else x)) (p_files params) -- For windows paths
+    decodedDevices    <- ExceptT $ sequenceA <$> mapM decodeYamlFile files
     devicesWithParams <- ExceptT $ return $ traverse (applyParameters params) decodedDevices
     _                 <- ExceptT $ return $ traverse hasNameConfilcts devicesWithParams
     codes             <- ExceptT $ sequenceA <$> traverse (return . generateCode) devicesWithParams
