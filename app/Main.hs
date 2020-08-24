@@ -7,46 +7,57 @@ import Data.Yaml
 import System.Console.CmdArgs (cmdArgs, modes)
 import Error
 import Control.Monad.Trans.Except
-
-
-testMain :: IO ()
-testMain = do
-    res <- testRun
-    case res of
-        Left err -> print err
-        Right xs -> uncurry toFile xs
-
-testRun :: IO (Either Error (String, FilePath))
-testRun = runExceptT $ do
-    let fname = "examples/esp32-ds18b20-1.yaml"
-    let inoName = changeExt "ino" fname
-    device <- ExceptT $ decodeYamlFile fname
-    _      <- ExceptT $ return $ hasNameConfilcts device
-    code   <- ExceptT $ return $ generateCode device
-    ExceptT $ return $ return (code, inoName)
+import Data.List (isPrefixOf)
+import Control.Monad (zipWithM)
 
 main :: IO ()
 main = do
-    res <- run
+    params <- cmdArgs (modes parameters)
+    res <-    run params
     case res of
-        Left err -> print err
-        Right xs -> mapM_ (uncurry toFile) xs
+        Left e -> print e
+        Right() -> return ()
 
-run :: IO (Result [(String, FilePath)])
-run = runExceptT $ do
-    params            <- ExceptT $ return <$> cmdArgs (modes parameters)
-    _                 <- ExceptT $ verifyParams params
-    let files = map (map (\x -> if x == '\\' then '/' else x)) (p_files params) -- For windows paths
-    decodedDevices    <- ExceptT $ sequenceA <$> mapM decodeYamlFile files
-    devicesWithParams <- ExceptT $ return $ traverse (applyParameters params) decodedDevices
+run :: Parameters -> IO(Result ())
+run params = case params of
+    Generate{} -> runGenerate params
+    Hass{}     -> runHass params
+
+runGenerate :: Parameters -> IO (Result ())
+runGenerate params = runExceptT $ do
+    params'           <- ExceptT $ return $ verifyParams params
+    decodedDevices    <- ExceptT $ decodeYamlFiles params'
+    devicesWithParams <- ExceptT $ return $ traverse (applyParameters params') decodedDevices
     _                 <- ExceptT $ return $ traverse hasNameConfilcts devicesWithParams
     codes             <- ExceptT $ sequenceA <$> traverse (return . generateCode) devicesWithParams
-    ExceptT $ return $ return $ zip codes (p_files params)
+    ExceptT $ fmap (Right . const ()) $ zipWithM toFile codes $ p_files params'
 
-verifyParams :: Parameters -> IO (Result Parameters)
+runHass :: Parameters -> IO (Result ())
+runHass params = do
+    putStrLn "Hass generator is not implemented yet!"
+    runExceptT $ do
+        _ <- ExceptT $ return $ verifyParams params
+        ExceptT $ return $ return ()
+
+verifyParams :: Parameters -> Result Parameters
 verifyParams params 
-    | null $ p_files params = return $ Left $ ParametersError "No files provided"
-    | otherwise = return $ Right params
+    | null $ p_files params = Left $ ParametersError "No files provided"
+    | otherwise             = Right normalizedParams
+    where
+        normalizedParams = params {p_files = normalizePaths $ p_files params} 
+        normalizePaths = map normalizePath
+        normalizePath f = 
+            let f' = map (\x -> if x == '\\' then '/' else x) f
+            in
+            if "./" `isPrefixOf` f' 
+                then drop 2 f'
+                else f'
+
+decodeYamlFiles :: Parameters -> IO (Result [Device])
+decodeYamlFiles params = do
+    let fnames = p_files params
+    x <- mapM decodeYamlFile fnames
+    return $ sequenceA x
 
 decodeYamlFile :: FilePath -> IO (Result Device)
 decodeYamlFile f = do 
@@ -65,7 +76,7 @@ toFile c f = do
     where 
         n = changeExt "ino" f
 
-wordsWhen     :: (Char -> Bool) -> String -> [String]
+wordsWhen :: (Char -> Bool) -> String -> [String]
 wordsWhen p s =  case dropWhile p s of
     "" -> []
     s' -> w : wordsWhen p s''
