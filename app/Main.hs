@@ -4,7 +4,7 @@ import CodeGenerators (generateCode)
 import Board
 import Parameters
 import Data.Yaml
-import System.Console.CmdArgs (cmdArgs)
+import System.Console.CmdArgs (cmdArgs, modes)
 import Error
 import Control.Monad.Trans.Except
 
@@ -32,10 +32,9 @@ main = do
         Left err -> print err
         Right xs -> mapM_ (uncurry toFile) xs
 
--- run :: IO (Result [String])
 run :: IO (Result [(String, FilePath)])
 run = runExceptT $ do
-    params            <- ExceptT $ return <$> cmdArgs parameters
+    params            <- ExceptT $ return <$> cmdArgs (modes parameters)
     _                 <- ExceptT $ verifyParams params
     let files = map (map (\x -> if x == '\\' then '/' else x)) (p_files params) -- For windows paths
     decodedDevices    <- ExceptT $ sequenceA <$> mapM decodeYamlFile files
