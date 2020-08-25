@@ -15,16 +15,25 @@ More will be added soon
 
 ## Usage
 ```
-declduino [OPTIONS] [FILES]
+declduino [COMMAND] ... [OPTIONS]
+
+Common flags:
+  -h --help                  Take a guess
+
+declduino generate [OPTIONS] [FILES]
 
 OPTIONS:
-  -s --ssid=<wifi-ssid>    Overrides WiFI SSID
-  -p --pass=<wifi-pass>    Overrides WiFi password
-  -m --mqtt=<mqtt-addr>    Overrides MQTT broker address
-     --port=<mqtt-port>    Overrides MQTT broker port
-  -b --board=<board-type>  Overrides board type
-  -n --name=<device-name>  Overrides device name
-  -h --help                Take a guess
+  -s --ssid=<wifi-ssid>      Overrides WiFI SSID
+  -p --pass=<wifi-pass>      Overrides WiFi password
+  -m --mqtt=<mqtt-addr>      Overrides MQTT broker address
+     --port=<mqtt-port>      Overrides MQTT broker port
+  -b --board=<board-type>    Overrides board type
+  -n --name=<device-name>    Overrides device name
+
+declduino hass [OPTIONS] [FILES]
+
+OPTIONS:
+  -o --output=<output.yaml>  Configuration output files
 ```
 
 ## Sample
