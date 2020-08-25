@@ -22,6 +22,9 @@ main = do
 
 run :: Parameters -> IO(Result ())
 run params = case params of
+    NoMode{}   -> do
+        putStrLn "Run declduino -h for help"
+        return $ return ()
     Generate{} -> runGenerate params
     Hass{}     -> runHass params
 

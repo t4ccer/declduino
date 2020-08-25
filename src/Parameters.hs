@@ -9,7 +9,8 @@ import Data.String
 
 
 data Parameters = 
-      Generate 
+      NoMode
+    | Generate 
         { p_ssid        :: String
         , p_pass        :: String
         , p_mqtt        :: String
@@ -39,6 +40,7 @@ parameters =
         { p_files       = def &= args &= typ "FILES"
         , p_output      = "configuration.yaml" &= name "o" &= name "output" &= explicit &= help "Configuration output file" &= typ "<output.yaml>" &= groupname "OPTIONS"
         }
+    , NoMode &= auto
     ]
     &= summary "declduino by t4ccer"
     &= program "declduino"
