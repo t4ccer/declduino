@@ -38,11 +38,11 @@ data Component =
       , channel :: Int
       }
     | DS18B20Component
-    { component_name :: String
-    , pin :: Int
-    , sensors :: [DS18B20Sensor]
-    , reporters :: [Reporter]
-    }
+      { component_name :: String
+      , pin :: Int
+      , sensors :: [DS18B20Sensor]
+      , reporters :: [Reporter]
+      }
     deriving(Show)
 
 data DS18B20Sensor = DS18B20Sensor 

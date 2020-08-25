@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 0d5cc4e272dcd806d569b5f1f129255c10a4c17bad4ef00d1679511db8b75e72
+-- hash: 82255cd4623580d5588548664c4f90b0016e68dc3d8df20b1a87e09b3d18a60b
 
 name:           declduino
 version:        0.1.0.0
@@ -30,13 +30,15 @@ library
       CodeGenerators
       CodeGenerators.ESP32
       Error
+      HomeAssistant
       Parameters
   other-modules:
       Paths_declduino
   hs-source-dirs:
       src
   build-depends:
-      ardu-gen
+      aeson
+    , ardu-gen
     , base >=4.14.0 && <4.14.1
     , bytestring
     , cmdargs
@@ -53,7 +55,8 @@ executable declduino
       app
   ghc-options: -threaded -rtsopts -with-rtsopts=-N -Wall -fwarn-incomplete-patterns
   build-depends:
-      ardu-gen
+      aeson
+    , ardu-gen
     , base >=4.14.0 && <4.14.1
     , bytestring
     , cmdargs

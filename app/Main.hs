@@ -9,6 +9,8 @@ import Error
 import Control.Monad.Trans.Except
 import Data.List (isPrefixOf)
 import Control.Monad (zipWithM)
+import HomeAssistant
+
 
 main :: IO ()
 main = do
@@ -36,8 +38,10 @@ runHass :: Parameters -> IO (Result ())
 runHass params = do
     putStrLn "Hass generator is not implemented yet!"
     runExceptT $ do
-        _ <- ExceptT $ return $ verifyParams params
-        ExceptT $ return $ return ()
+        params' <- ExceptT $ return $ verifyParams params
+        decodedDevices    <- ExceptT $ decodeYamlFiles params'
+        entities          <- ExceptT $ return $ return $ devicesToEntities decodedDevices
+        ExceptT $ return <$> encodeFile (p_output params') entities 
 
 verifyParams :: Parameters -> Result Parameters
 verifyParams params 

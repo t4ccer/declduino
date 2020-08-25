@@ -20,6 +20,7 @@ dependencies:
 - cmdargs
 - ardu-gen
 - transformers
+- aeson
 library:
   source-dirs: src
 

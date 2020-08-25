@@ -1,3 +1,4 @@
 .stack-work/
 *~
 *.ino
+configuration.yaml
