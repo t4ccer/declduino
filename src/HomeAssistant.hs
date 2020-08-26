@@ -49,11 +49,11 @@ flatEL :: [EntityList] -> EntityList
 flatEL [] = EntityList "" []
 flatEL (x:xs) = foldl (<>) x xs
 
-devicesToEntities :: Foldable t => t Device -> [EntityList]
-devicesToEntities = filter (not . null . entities) . map flatEL . concatMap deviceToEntities
+devicesToEntities :: [Device] -> [EntityList]
+devicesToEntities = map flatEL . groupBy (\x y -> lst_name x == lst_name y) . sortOn lst_name . concatMap deviceToEntities
 
-deviceToEntities :: Device -> [[EntityList]]
-deviceToEntities dev =  groupBy (\x y -> lst_name x == lst_name y) $ sortOn lst_name ents
+deviceToEntities :: Device -> [EntityList]
+deviceToEntities dev = ents
     where
         ents = map (componentToEntity dev) comps
         comps = components dev
@@ -76,7 +76,13 @@ componentToEntity dev comp = case comp of
         , command_topic = Just (baseTopic ++ "/mode") 
         , brightness_command_topic = Just (baseTopic ++ "/pwm") 
         }]
-    -- TODO(t4cer): DS18B20Component{} -> undefined
+    DS18B20Component{}       -> flatEL $ map mkEntity $ sensors comp
+        where
+            mkEntity (DS18B20Sensor n _) = EntityList "sensor" [namedEntity
+                { state_topic = Just (baseTopic ++ "/" ++ n)
+                , name = mkName ++ "_" ++ n
+                , unique_id = mkName ++ "_" ++ n 
+                }]
     where
         mkName = "declduino_" ++ device_name dev ++ "_" ++ component_name comp
         baseTopic = "declduino/" ++ device_name dev ++ "/" ++ component_name comp
