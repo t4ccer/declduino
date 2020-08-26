@@ -34,13 +34,13 @@ parameters =
         , p_mqtt        = def &= name "m" &= name "mqtt"  &= groupname "OPTIONS" &= typ "<mqtt-addr>"   &= explicit &= help "Overrides MQTT broker address"
         , p_mqtt_port   = 1883            &= name "port"  &= groupname "OPTIONS" &= typ "<mqtt-port>"   &= explicit &= help "Overrides MQTT broker port"
         , p_board       = def &= name "b" &= name "board" &= groupname "OPTIONS" &= typ "<board-type>"  &= explicit &= help "Overrides board type"
-        , p_device_name = def &= name "n" &= name "name"  &= groupname "OPTIONS" &= typ "<device-name>" &= explicit &= help "Overrides device name"
+        , p_device_name = def &= name "n" &= name "name"  &= groupname "OPTIONS" &= typ "<device-name>" &= explicit &= help "Overrides device name. Note that this option will override name of all devices" 
         , p_files       = def &= args &= typ "FILES"
         }
     , Hass
         { p_files       = def &= args &= typ "FILES"
-        , p_output      = "configuration.yaml" &= name "o" &= name "output" &= explicit &= help "Configuration output file" &= typ "<output.yaml>" &= groupname "OPTIONS"
-        , p_device_name = def &= name "n" &= name "name"  &= groupname "OPTIONS" &= typ "<device-name>" &= explicit &= help "Overrides device name"
+        , p_output      = "configuration.yaml" &= name "o" &= name "output" &= explicit &= help "Configuration output file. Default: configuration.yaml" &= typ "<output.yaml>" &= groupname "OPTIONS"
+        , p_device_name = def &= name "n" &= name "name"  &= groupname "OPTIONS" &= typ "<device-name>" &= explicit &= help "Overrides device name. Note that this option will override name of all devices"
         }
     , NoMode &= auto
     ]
