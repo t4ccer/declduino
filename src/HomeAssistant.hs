@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveGeneric, DuplicateRecordFields, OverloadedStrings, ScopedTypeVariables #-}
+{-# LANGUAGE DeriveGeneric, DuplicateRecordFields, OverloadedStrings, ScopedTypeVariables, FlexibleInstances #-}
 
 module HomeAssistant (devicesToEntities) where
 
@@ -30,6 +30,9 @@ data EntityList = EntityList
     deriving (Show, Generic) 
 instance ToJSON EntityList where
     toJSON (EntityList n ns) = object [pack n .= ns]
+instance {-# OVERLAPS #-} ToJSON [EntityList] where
+    toJSON xs = object $ map (\x -> pack (lst_name x) .= entities x) xs
+
 instance Semigroup EntityList where
     (EntityList n xs) <> (EntityList _ ys) = EntityList n (xs++ys)
 

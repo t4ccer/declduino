@@ -39,7 +39,7 @@ runGenerate params = runExceptT $ do
 
 runHass :: Parameters -> IO (Result ())
 runHass params = do
-    putStrLn "Hass generator is not implemented yet!"
+    putStrLn "WARNING: Hass generator is still in beta" 
     runExceptT $ do
         params' <- ExceptT $ return $ verifyParams params
         decodedDevices    <- ExceptT $ decodeYamlFiles params'
