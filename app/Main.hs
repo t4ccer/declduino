@@ -43,7 +43,8 @@ runHass params = do
     runExceptT $ do
         params' <- ExceptT $ return $ verifyParams params
         decodedDevices    <- ExceptT $ decodeYamlFiles params'
-        entities          <- ExceptT $ return $ return $ devicesToEntities decodedDevices
+        devicesWithParams <- ExceptT $ return $ traverse (applyParameters params') decodedDevices 
+        entities          <- ExceptT $ return $ return $ devicesToEntities devicesWithParams
         ExceptT $ return <$> encodeFile (p_output params') entities 
 
 verifyParams :: Parameters -> Result Parameters
