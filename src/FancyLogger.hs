@@ -68,7 +68,12 @@ prettyPrintLogs :: LogLevel -> FancyLogger a -> IO ()
 prettyPrintLogs level (FancyLogger a) = do
     (_, w) <- a
     let w' = filter (\(Log l _) -> l >= level) w
-    mapM_ (putStrLn . \(Log l m) -> "[" ++ show l ++ "] "++m) w'
+    mapM_ (putStrLn . \(Log l m) -> showLevel l ++m) w'
+    where
+        showLevel Debug   = "[ DEBUG ] "
+        showLevel Info    = "[ INFO  ] "
+        showLevel Warning = "[WARNING] "
+        showLevel Error   = "[ ERROR ] "
 
 
 fromIO :: IO a -> FancyLogger a
