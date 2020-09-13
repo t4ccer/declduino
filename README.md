@@ -28,12 +28,20 @@ OPTIONS:
   -m --mqtt=<mqtt-addr>      Overrides MQTT broker address
      --port=<mqtt-port>      Overrides MQTT broker port
   -b --board=<board-type>    Overrides board type
-  -n --name=<device-name>    Overrides device name
+  -n --name=<device-name>    Overrides device name. Note that this option
+                             will override name of all devices
+  -v --verbosity=<mode>      Sets verbosity. mode =
+                             <debug|info|warning|error>. Default: info
 
 declduino hass [OPTIONS] [FILES]
 
 OPTIONS:
-  -o --output=<output.yaml>  Configuration output files
+  -o --output=<output.yaml>  Configuration output file. Default:
+                             configuration.yaml
+  -n --name=<device-name>    Overrides device name. Note that this option
+                             will override name of all devices
+  -v --verbosity=<mode>      Sets verbosity. mode =
+                             <debug|info|warning|error>. Default: info
 ```
 
 ## Sample

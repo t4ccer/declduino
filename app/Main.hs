@@ -28,7 +28,7 @@ run params = case params of
 runGenerate :: Parameters -> FancyLogger ()
 runGenerate params =  do
     params'           <- verifyParams params
-    decodedDevices    <-        decodeYamlFiles params'
+    decodedDevices    <- decodeYamlFiles params'
     devicesWithParams <- traverse (applyParameters params') decodedDevices
     traverse_ hasNameConfilcts devicesWithParams
     codes             <- traverse generateCode devicesWithParams
