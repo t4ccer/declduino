@@ -36,6 +36,7 @@ runGenerate params =  do
 
 runHass :: Parameters -> FancyLogger ()
 runHass params = do
+    returnWithLog (Log Warning "HASS generator is still in preview") ()
     params'           <- verifyParams params
     decodedDevices    <- decodeYamlFiles params'
     devicesWithParams <- traverse (applyParameters params') decodedDevices 
