@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 33912f079e13bedfc5de240e68bfa3b9059ef660a6aa60aebb2dcae656590acd
+-- hash: 287736e5baa0c3924e187f7d9c8b30a786b497a24593d373095a383c1211941b
 
 name:           declduino
 version:        0.1.0.0
@@ -29,9 +29,8 @@ library
       Board
       CodeGenerators
       CodeGenerators.ESP32
-      Error
+      FancyLogger
       HomeAssistant
-      LoggerResult
       Parameters
   other-modules:
       Paths_declduino

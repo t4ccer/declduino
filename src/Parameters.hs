@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveDataTypeable, DuplicateRecordFields #-}
+{-# LANGUAGE DeriveDataTypeable, DuplicateRecordFields#-}
 {-# OPTIONS_GHC -fno-cse #-}
 
 module Parameters where
@@ -6,7 +6,7 @@ module Parameters where
 import System.Console.CmdArgs
 import Board
 import Data.String
-
+import FancyLogger
 
 data Parameters = 
       NoMode
@@ -49,27 +49,26 @@ parameters =
     &= helpArg [explicit, name "help", name "h", help "Take a guess"]
     &= versionArg [ignore]
 
-applyParameters :: Parameters -> Device -> Result Device
-applyParameters params device = case params of 
-    Generate{} -> if p_board params == ""
-        then return new_dev
-        else 
-            case param_board of
-                (Left e) -> Left e
-                (Right v) -> return $ new_dev { board = v }
+applyParameters :: Parameters -> Device -> FancyLogger Device
+applyParameters params device = case params of
+    Generate {} -> if p_board params == "" 
+        then 
+            returnWithLog (Log Debug "Applied params for generate") new_dev
+        else do
+            board_type <- fromString $ p_board params
+            returnWithLog (Log Debug "Applied params for generate") new_dev {board = board_type}
         where
-            param_board = fromString $ p_board params
-            new_dev = device
-                    { device_name = apply (device_name device) (p_device_name params)   ""
-                    , ssid        = apply (ssid device)        (p_ssid params)          ""
-                    , pass        = apply (pass device)        (p_pass params)          ""
-                    , mqtt        = apply (mqtt device)        (p_mqtt params)          ""
-                    , port        = apply (port device)        (p_mqtt_port params) 1883
-                    }
-    Hass{}    -> return device
-        { device_name = apply (device_name device) (p_device_name params)   ""
+             new_dev = device
+                     { device_name = apply (device_name device) (p_device_name params)   ""
+                     , ssid        = apply (ssid device)        (p_ssid params)          ""
+                     , pass        = apply (pass device)        (p_pass params)          ""
+                     , mqtt        = apply (mqtt device)        (p_mqtt params)          ""
+                     , port        = apply (port device)        (p_mqtt_port params) 1883
+                     }
+    Hass     {} -> returnWithLog (Log Debug "Applied params for hass") device
+        { device_name = apply (device_name device) (p_device_name params) ""
         }
-    NoMode{}  -> undefined -- Should never happen
+    NoMode   {} -> returnError "This should never happen"
 
 apply :: (Eq a) => a -> a -> a -> a
 apply val new def'

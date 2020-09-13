@@ -10,22 +10,22 @@ import qualified ArduGen.Libraries.DS18b20 as DS
 import ArduGen.Arduino hiding (map)
 import ArduGen.ESP32
 import Board
-import Error
 import Prelude hiding ((+), (==), (*), (-), (/=), (>=), (^))
 import qualified Prelude ((+), (*))
 import Data.Char (ord)
+import FancyLogger
 
 toStrPtr :: LVal a -> RVal (Ptr Char)
 toStrPtr v = trustMe ("String("++unVal v ++ ").c_str()")
 
-generateCode :: Device -> Result String
+generateCode :: Device -> FancyLogger String
 generateCode dev = do
     assigned <- assignPWMChannels dev
     return $ base assigned
 
-assignPWMChannels :: Device -> Result Device
+assignPWMChannels :: Device -> FancyLogger Device
 assignPWMChannels dev 
-    | length pwms Prelude.> 16 = Left (BoardSpecificError ("ESP32 can support only 16 pwm outputs, You declared " ++ show (length pwms)))
+    | length pwms Prelude.> 16 = returnError ("ESP32 can support only 16 pwm outputs, You declared " ++ show (length pwms))
     | otherwise = return $ dev { components=assigned }
     where
         pwms = [PWMOutputComponent n p (-1) | (PWMOutputComponent n p _) <- components dev]

@@ -1,3 +1,4 @@
+{-# LANGUAGE ScopedTypeVariables #-}
 module Main where
 
 import CodeGenerators (generateCode)
@@ -5,52 +6,46 @@ import Board
 import Parameters
 import Data.Yaml
 import System.Console.CmdArgs (cmdArgs, modes)
-import Error
-import Control.Monad.Trans.Except
 import Data.List (isPrefixOf)
-import Control.Monad (zipWithM)
+import Control.Monad (zipWithM_)
 import HomeAssistant
-
+import FancyLogger
+import Data.Foldable (traverse_)
 
 main :: IO ()
 main = do
     params <- cmdArgs (modes parameters)
-    res <-    run params
-    case res of
-        Left e -> print e
-        Right() -> return ()
+    let res = run params
+    prettyPrintLogs Debug res
 
-run :: Parameters -> IO(Result ())
+run :: Parameters -> FancyLogger ()
 run params = case params of
     NoMode{}   -> do
-        putStrLn "Run declduino -h for help"
-        return $ return ()
+        returnWithLog (Log Info "Run declduino -h for help") ()
     Generate{} -> runGenerate params
     Hass{}     -> runHass params
 
-runGenerate :: Parameters -> IO (Result ())
-runGenerate params = runExceptT $ do
-    params'           <- ExceptT $ return $ verifyParams params
-    decodedDevices    <- ExceptT $ decodeYamlFiles params'
-    devicesWithParams <- ExceptT $ return $ traverse (applyParameters params') decodedDevices
-    _                 <- ExceptT $ return $ traverse hasNameConfilcts devicesWithParams
-    codes             <- ExceptT $ sequenceA <$> traverse (return . generateCode) devicesWithParams
-    ExceptT $ fmap (Right . const ()) $ zipWithM toFile codes $ p_files params'
+runGenerate :: Parameters -> FancyLogger ()
+runGenerate params =  do
+    params'           <- verifyParams params
+    decodedDevices    <-        decodeYamlFiles params'
+    devicesWithParams <- traverse (applyParameters params') decodedDevices
+    traverse_ hasNameConfilcts devicesWithParams
+    codes             <- traverse generateCode devicesWithParams
+    zipWithM_ toFile codes $ p_files params'
 
-runHass :: Parameters -> IO (Result ())
+runHass :: Parameters -> FancyLogger ()
 runHass params = do
-    putStrLn "WARNING: Hass generator is still in beta" 
-    runExceptT $ do
-        params' <- ExceptT $ return $ verifyParams params
-        decodedDevices    <- ExceptT $ decodeYamlFiles params'
-        devicesWithParams <- ExceptT $ return $ traverse (applyParameters params') decodedDevices 
-        entities          <- ExceptT $ return $ return $ devicesToEntities devicesWithParams
-        ExceptT $ return <$> encodeFile (p_output params') entities 
-
-verifyParams :: Parameters -> Result Parameters
+    params'           <- verifyParams params
+    decodedDevices    <- decodeYamlFiles params'
+    devicesWithParams <- traverse (applyParameters params') decodedDevices 
+    let entities       = devicesToEntities devicesWithParams
+    appendLog (Log Info ("Created file " ++ p_output params')) $ fromIO $ encodeFile (p_output params') entities 
+        
+verifyParams :: Parameters -> FancyLogger Parameters
 verifyParams params 
-    | null $ p_files params = Left $ ParametersError "No files provided"
-    | otherwise             = Right normalizedParams
+    | null $ p_files params = returnError "No files provided"
+    | otherwise             = returnWithLog (Log Debug "Verified params") normalizedParams
     where
         normalizedParams = params {p_files = normalizePaths $ p_files params} 
         normalizePaths = map normalizePath
@@ -61,26 +56,22 @@ verifyParams params
                 then drop 2 f'
                 else f'
 
-decodeYamlFiles :: Parameters -> IO (Result [Device])
-decodeYamlFiles params = do
-    let fnames = p_files params
-    x <- mapM decodeYamlFile fnames
-    return $ sequenceA x
+decodeYamlFiles :: Parameters -> FancyLogger [Device]
+decodeYamlFiles params = mapM decodeYamlFile $ p_files params
 
-decodeYamlFile :: FilePath -> IO (Result Device)
+decodeYamlFile :: FilePath -> FancyLogger Device
 decodeYamlFile f = do 
-    dec <- decodeFileEither f
-    case dec of 
-        (Left _) -> return $ Left YamlParserError
-        (Right v) -> return v
+    decoded_device :: Either ParseException (FancyLogger Device) <- fromIO $ decodeFileEither f
+    case decoded_device of
+        Left e  -> returnError $ "Something gone really wrong: " ++ show e
+        Right d -> d
 
 changeExt :: String -> String -> String
 changeExt ext = (++"."++ext) . head . wordsWhen ('.' ==)
 
-toFile :: String -> FilePath -> IO()
+toFile :: String -> FilePath -> FancyLogger ()
 toFile c f = do
-    putStrLn ("Created file " ++ n)
-    writeFile n c 
+    appendLog (Log Info ("Created file " ++ n)) $ fromIO $ writeFile n c 
     where 
         n = changeExt "ino" f
 

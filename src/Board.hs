@@ -1,4 +1,4 @@
-{-# LANGUAGE MultiParamTypeClasses, FlexibleInstances, MultiWayIf #-}
+{-# LANGUAGE MultiParamTypeClasses, FlexibleInstances, MultiWayIf, ScopedTypeVariables #-}
 
 module Board where
 
@@ -7,11 +7,10 @@ import Data.Yaml
 import Prelude hiding ((>>))
 import Data.String
 import Data.List (nub, (\\))
-import Error
+import FancyLogger
 
 type Seconds = Int
 type Miliseconds = Int
-type Result a = Either Error a
 
 data BoardType = 
       ESP32
@@ -61,101 +60,65 @@ data Device = Device
     }
     deriving(Show)
 
-instance {-# OVERLAPS #-} FromJSON (Result Reporter) where
+instance {-# OVERLAPS #-} FromJSON (FancyLogger Reporter) where
     parseJSON (Object v) = do
-        t <- v .: pack "type"
+        decoded_type <- v .: pack "type"
         if
-            | t == "on-change" -> do
+            | decoded_type == "on-change" -> do
                 d <- v .: pack "debounce"
-                return $ Right (OnChange d)
-            | t == "on-time" -> do
+                return $ returnWithLog (Log Debug "Decoded on-change reporter") (OnChange d)
+            | decoded_type == "on-time" -> do
                 i <- v .: pack "interval"
-                return $ Right (OnTime i)
-            | otherwise -> return $ Left (UnknownReporterError t)
-    parseJSON _ =  return $ Left YamlParserError
+                return $ returnWithLog (Log Debug "Decoded interval reporter") (OnTime i)
+            | otherwise -> return $ returnError ("Unknown reporter type: " ++ decoded_type)
+    parseJSON _ =  return $ returnError "Failed docoding reporter" 
 
-instance {-# OVERLAPS #-} FromJSON (Result Component) where
+instance {-# OVERLAPS #-} FromJSON (FancyLogger Component) where
     parseJSON (Object v) = do
-        n <- v .: pack "name"
-        t <- v .: pack "type"
-        if 
-            | t == "digital-output" -> do
-                p <- v .: pack "pin"
-                return $ Right (DigitalOutputComponent n p) 
-            | t == "digital-input" -> do 
-                p <- v .: pack "pin"
-                r <- v .: pack "reporters"
-                let r' = sequenceA r
-                case r' of
-                    (Left e) -> return $ Left e
-                    (Right rs) ->
-                        return $ Right (DigitalInputComponent n p rs)
-            | t == "pwm-output" -> do
-                p <- v .: pack "pin"
-                return $ Right (PWMOutputComponent n p (-1)) 
-            | t == "ds18b20" -> do
-                p  <- v .: pack "pin"
-                s  <- v .: pack "sensors"
-                rs <- v .: pack "reporters"
-                let rs' = sequenceA rs
-                let s' = sequenceA s
-                case rs' of
-                    (Left e) -> return $ Left e
-                    (Right rs'') -> case s' of
-                        (Left e) -> return $ Left e
-                        (Right s'') -> return $ Right $ DS18B20Component n p s'' rs''
-                
-            | otherwise -> 
-                return $ Left (UnknownComponentError t)
-    parseJSON _ =  return $ Left YamlParserError
+        parsed_name :: FancyLogger String <- return <$> v .: pack "name"
+        parsed_type <- v .: pack "type"
+        if
+            | parsed_type == "digital-output" -> do
+                parsed_pin <- return <$> v .: pack "pin"
+                let comp = DigitalOutputComponent <$> parsed_name <*> parsed_pin
+                return $ appendLog (Log Debug "Parsed digital-output component") comp
+            | parsed_type == "digital-input" -> undefined
+            | otherwise -> return $ returnError "Unknown component type"
+    parseJSON _ =  return $ returnError "Component parse error"
 
-instance {-# OVERLAPS #-} FromJSON (Result DS18B20Sensor) where
+instance {-# OVERLAPS #-} FromJSON (FancyLogger DS18B20Sensor) where
     parseJSON (Object v) = do
         n <- v .: pack "name"
         i <- v .: pack "index"
-        return $ Right $ DS18B20Sensor n i
-    parseJSON _ = return $ Left YamlParserError
+        return $ return $ DS18B20Sensor n i
+    parseJSON _ = return $ returnError "Failed decoding ds18b20 sensor"
 
-instance IsString (Result BoardType) where
-    fromString "esp32" = Right ESP32
-    fromString s = Left (UnknownBoardError s)
+instance IsString (FancyLogger BoardType) where
+    fromString "esp32" = returnWithLog (Log Debug "Decoded board type from string (esp32)") ESP32
+    fromString s = returnError ("Failed decoding board type '" ++ s++"'")
 
-instance {-# OVERLAPS #-} FromJSON (Result BoardType) where
+instance {-# OVERLAPS #-} FromJSON (FancyLogger BoardType) where
     parseJSON (String t) = return $ fromString (unpack t)
-    parseJSON _ =  return $ Left YamlParserError
+    parseJSON _ =  return $ returnError "Failed yaml decoding"
 
 
-instance {-# OVERLAPS #-} FromJSON (Result Device) where
+instance {-# OVERLAPS #-} FromJSON (FancyLogger Device) where
     parseJSON (Object v) = do
-        b <- v .: pack "board"
-        case b of
-            (Left e) -> return $ Left e
-            (Right b') -> do
-                n  <- v .: pack "name"
-                s  <- v .: pack "ssid"
-                pa <- v .: pack "pass"
-                m  <- v .: pack "mqtt"
-                po <- v .: pack "port"
-                c  <- v .: pack "components"
-                let c' = sequenceA c
-                case c' of
-                    (Left e) -> return $ Left e
-                    (Right cs) -> 
-                        return $ Right Device 
-                            { board = b'
-                            , device_name = n
-                            , ssid = s
-                            , pass = pa
-                            , mqtt = m
-                            , port = po
-                            , components = cs
-                            }
-    parseJSON _ =  return $ Left YamlParserError
+        parsed_board_type <-            v .: pack "board"
+        parsed_name       <- return <$> v .: pack "name"
+        parsed_ssid       <- return <$> v .: pack "ssid"
+        parsed_pass       <- return <$> v .: pack "pass"
+        parsed_mqtt       <- return <$> v .: pack "mqtt"
+        parsed_port       <- return <$> v .: pack "port"
+        parsed_components <- sequenceA <$> v .: pack "components"
 
-hasNameConfilcts :: Device -> Result Device
+        return $ Device <$> parsed_board_type <*> parsed_name <*> parsed_ssid <*> parsed_pass <*> parsed_mqtt <*> parsed_port <*> parsed_components
+    parseJSON _ = return $ returnError "Device parse error"
+
+hasNameConfilcts :: Device -> FancyLogger Device
 hasNameConfilcts dev = if null repetitions
-        then Right dev
-        else Left $ ComponentNameConfilctError (head repetitions)
+        then returnWithLog (Log Debug "Checked for components name conflicts") dev
+        else returnError ("Components name conflict: " ++ head repetitions)
         where 
             names = map component_name $ components dev
             repetitions = names \\ nub names
