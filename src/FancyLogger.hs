@@ -1,8 +1,9 @@
-{-# LANGUAGE FlexibleInstances, ConstrainedClassMethods, DeriveFunctor #-}
+{-# LANGUAGE FlexibleInstances, ConstrainedClassMethods, DeriveFunctor,DeriveDataTypeable #-}
 
 module FancyLogger where
 
 import Control.Monad (void)
+import System.Console.CmdArgs (Data)
 import Prelude hiding (log)
 
 data LogLevel = 
@@ -10,7 +11,7 @@ data LogLevel =
     | Info
     | Warning
     | Error
-    deriving (Show, Eq, Ord)
+    deriving (Show, Eq, Ord, Data)
 
 
 data Log = Log LogLevel String

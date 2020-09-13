@@ -16,7 +16,7 @@ main :: IO ()
 main = do
     params <- cmdArgs (modes parameters)
     let res = run params
-    prettyPrintLogs Debug res
+    prettyPrintLogs (p_verbosity params) res
 
 run :: Parameters -> FancyLogger ()
 run params = case params of

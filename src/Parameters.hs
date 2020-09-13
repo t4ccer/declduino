@@ -18,29 +18,33 @@ data Parameters =
         , p_board       :: String
         , p_device_name :: String
         , p_files       :: [FilePath]
+        , p_verbosity   :: LogLevel
         } 
     | Hass
         { p_files       :: [FilePath]
         , p_output      :: FilePath
         , p_device_name :: String
+        , p_verbosity   :: LogLevel
         }
     deriving (Show, Data, Typeable)
 
 parameters :: [Parameters]
 parameters = 
     [Generate
-        { p_ssid        = def &= name "s" &= name "ssid"  &= groupname "OPTIONS" &= typ "<wifi-ssid>"   &= explicit &= help "Overrides WiFI SSID"
-        , p_pass        = def &= name "p" &= name "pass"  &= groupname "OPTIONS" &= typ "<wifi-pass>"   &= explicit &= help "Overrides WiFi password"
-        , p_mqtt        = def &= name "m" &= name "mqtt"  &= groupname "OPTIONS" &= typ "<mqtt-addr>"   &= explicit &= help "Overrides MQTT broker address"
-        , p_mqtt_port   = 1883            &= name "port"  &= groupname "OPTIONS" &= typ "<mqtt-port>"   &= explicit &= help "Overrides MQTT broker port"
-        , p_board       = def &= name "b" &= name "board" &= groupname "OPTIONS" &= typ "<board-type>"  &= explicit &= help "Overrides board type"
-        , p_device_name = def &= name "n" &= name "name"  &= groupname "OPTIONS" &= typ "<device-name>" &= explicit &= help "Overrides device name. Note that this option will override name of all devices" 
-        , p_files       = def &= args &= typ "FILES"
+        { p_ssid        = def  &= name "s" &= name "ssid"  &= groupname "OPTIONS" &= typ "<wifi-ssid>"   &= explicit &= help "Overrides WiFI SSID"
+        , p_pass        = def  &= name "p" &= name "pass"  &= groupname "OPTIONS" &= typ "<wifi-pass>"   &= explicit &= help "Overrides WiFi password"
+        , p_mqtt        = def  &= name "m" &= name "mqtt"  &= groupname "OPTIONS" &= typ "<mqtt-addr>"   &= explicit &= help "Overrides MQTT broker address"
+        , p_mqtt_port   = 1883             &= name "port"  &= groupname "OPTIONS" &= typ "<mqtt-port>"   &= explicit &= help "Overrides MQTT broker port"
+        , p_board       = def  &= name "b" &= name "board" &= groupname "OPTIONS" &= typ "<board-type>"  &= explicit &= help "Overrides board type"
+        , p_device_name = def  &= name "n" &= name "name"  &= groupname "OPTIONS" &= typ "<device-name>" &= explicit &= help "Overrides device name. Note that this option will override name of all devices" 
+        , p_files       = def  &= args &= typ "FILES"
+        , p_verbosity   = Info &= name "v" &= name "verbosity" &= groupname "OPTIONS" &= typ "<mode>" &= explicit &= help "Sets verbosity. mode = <debug|info|warning|error>. Default: info"
         }
     , Hass
         { p_files       = def &= args &= typ "FILES"
         , p_output      = "configuration.yaml" &= name "o" &= name "output" &= explicit &= help "Configuration output file. Default: configuration.yaml" &= typ "<output.yaml>" &= groupname "OPTIONS"
         , p_device_name = def &= name "n" &= name "name"  &= groupname "OPTIONS" &= typ "<device-name>" &= explicit &= help "Overrides device name. Note that this option will override name of all devices"
+        , p_verbosity   = Info &= name "v" &= name "verbosity" &= groupname "OPTIONS" &= typ "<mode>" &= explicit &= help "Sets verbosity. mode = <debug|info|warning|error>. Default: info"
         }
     , NoMode &= auto
     ]
