@@ -79,20 +79,24 @@ instance {-# OVERLAPS #-} FromJSON (FancyLogger Component) where
         parsed_name <- return <$> v .: pack "name"
         parsed_str_name :: String <- v .: pack "name"
         parsed_type <- v .: pack "type"
+        let return' = return . appendLog (Log Debug [i|Decoded '#{parsed_type}' component '#{parsed_str_name}'|])
         if
             | parsed_type == "digital-output" -> do
                 parsed_pin <- return <$> v .: pack "pin"
-
-                let comp = DigitalOutputComponent <$> parsed_name <*> parsed_pin
-                return $ appendLog (Log Debug [i|Decoded digital-output component '#{parsed_str_name}'|]) comp
+                return' $ DigitalOutputComponent <$> parsed_name <*> parsed_pin
             | parsed_type == "digital-input" -> do
-                parsed_pin <- return <$> v .: pack "pin"
+                parsed_pin       <- return <$> v .: pack "pin"
                 parsed_reporters <- fmap sequenceA $ v .: pack "reporters"
-
-                let comp = DigitalInputComponent <$> parsed_name <*> parsed_pin <*> parsed_reporters
-                return $ appendLog (Log Debug [i|Decoded digital-input component '#{parsed_str_name}'|]) comp
-                
-            | otherwise -> return $ returnError [i|Failed decoding component type '#{parsed_type}'|]
+                return' $ DigitalInputComponent <$> parsed_name <*> parsed_pin <*> parsed_reporters
+            | parsed_type == "pwm-output" -> do
+                parsed_pin <- return <$> v .: pack "pin"
+                return' $ PWMOutputComponent <$> parsed_name <*> parsed_pin <*> return (-1)
+            | parsed_type == "ds18b20" -> do
+                parsed_pin       <- return <$> v .: pack "pin"
+                parsed_reporters <- fmap sequenceA $ v .: pack "reporters"
+                parsed_sensors   <- fmap sequenceA $ v .: pack "sensors"
+                return' $ DS18B20Component <$> parsed_name <*> parsed_pin <*> parsed_sensors <*> parsed_reporters
+            | otherwise -> return $ returnError [i|Unknown component type: '#{parsed_type}'|]
     parseJSON _ =  return $ returnError "Component parse error"
 
 instance {-# OVERLAPS #-} FromJSON (FancyLogger DS18B20Sensor) where

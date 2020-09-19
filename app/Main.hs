@@ -60,14 +60,16 @@ verifyParams params
                 else f'
 
 decodeYamlFiles :: Parameters -> FancyLogger [Device]
-decodeYamlFiles = mapM decodeYamlFile . p_files
+decodeYamlFiles params = do
+    returnWithLog (Log Debug "Decoding files") ()
+    mapM decodeYamlFile $ p_files params
 
 decodeYamlFile :: FilePath -> FancyLogger Device
 decodeYamlFile f = do 
     decoded_device :: Either ParseException (FancyLogger Device) <- fromIO $ decodeFileEither f
     case decoded_device of
         Left e -> returnError [i|Failed decoding file '#{f}': #{show e}|]
-        Right d -> appendLog (Log Debug [i|Decoded file '#{f}'|]) d
+        Right d -> appendLog (Log Debug [i|Decoding file '#{f}'|]) d
 
 changeExt :: String -> String -> String
 changeExt ext = (++"."++ext) . head . wordsWhen ('.' ==)
