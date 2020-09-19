@@ -74,7 +74,7 @@ changeExt ext = (++"."++ext) . head . wordsWhen ('.' ==)
 
 toFile :: String -> FilePath -> FancyLogger ()
 toFile c f = do
-    appendLog (Log Info [i|Created file '#{f}'|]) $ fromIO $ writeFile n c 
+    appendLog (Log Info [i|Created file '#{n}'|]) $ fromIO $ writeFile n c 
     where 
         n = changeExt "ino" f
 
