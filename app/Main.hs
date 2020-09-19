@@ -1,4 +1,4 @@
-{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE ScopedTypeVariables, QuasiQuotes #-}
 module Main where
 
 import CodeGenerators (generateCode)
@@ -11,6 +11,7 @@ import Control.Monad (zipWithM_)
 import HomeAssistant
 import FancyLogger
 import Data.Foldable (traverse_)
+import Data.String.Interpolate (i)
 
 main :: IO ()
 main = do
@@ -42,7 +43,7 @@ runHass params = do
     decodedDevices    <- decodeYamlFiles params'
     devicesWithParams <- traverse (applyParameters params') decodedDevices 
     let entities       = devicesToEntities devicesWithParams
-    appendLog (Log Info ("Created file " ++ p_output params')) $ fromIO $ encodeFile (p_output params') entities 
+    appendLog (Log Info [i|Created file '#{p_output params'}'|]) $ fromIO $ encodeFile (p_output params') entities 
         
 verifyParams :: Parameters -> FancyLogger Parameters
 verifyParams params 
@@ -65,15 +66,15 @@ decodeYamlFile :: FilePath -> FancyLogger Device
 decodeYamlFile f = do 
     decoded_device :: Either ParseException (FancyLogger Device) <- fromIO $ decodeFileEither f
     case decoded_device of
-        Left e  -> returnError $ "Failed decoding file '" ++ f ++ "': " ++ show e
-        Right d -> appendLog (Log Debug ("Decoded file '" ++ f ++ "'")) d
+        Left e -> returnError [i|Failed decoding file '#{f}': #{show e}|]
+        Right d -> appendLog (Log Debug [i|Decoded file '#{f}'|]) d
 
 changeExt :: String -> String -> String
 changeExt ext = (++"."++ext) . head . wordsWhen ('.' ==)
 
 toFile :: String -> FilePath -> FancyLogger ()
 toFile c f = do
-    appendLog (Log Info ("Created file " ++ n)) $ fromIO $ writeFile n c 
+    appendLog (Log Info [i|Created file '#{f}'|]) $ fromIO $ writeFile n c 
     where 
         n = changeExt "ino" f
 

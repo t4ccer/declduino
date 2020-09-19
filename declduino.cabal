@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 287736e5baa0c3924e187f7d9c8b30a786b497a24593d373095a383c1211941b
+-- hash: c1d6d93142d8dd580f1ac82d61d54f51292c30d38ba4b1006c21c2e3167fbf25
 
 name:           declduino
 version:        0.1.0.0
@@ -42,6 +42,7 @@ library
     , base >=4.14.0 && <4.14.1
     , bytestring
     , cmdargs
+    , string-interpolate
     , text >=1.2.3.2
     , transformers
     , yaml
@@ -61,6 +62,7 @@ executable declduino
     , bytestring
     , cmdargs
     , declduino
+    , string-interpolate
     , text >=1.2.3.2
     , transformers
     , yaml

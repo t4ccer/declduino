@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveDataTypeable, DuplicateRecordFields#-}
+{-# LANGUAGE DeriveDataTypeable, DuplicateRecordFields, QuasiQuotes #-}
 {-# OPTIONS_GHC -fno-cse #-}
 
 module Parameters where
@@ -7,6 +7,7 @@ import System.Console.CmdArgs
 import Board
 import Data.String
 import FancyLogger
+import Data.String.Interpolate (i)
 
 data Parameters = 
       NoMode
@@ -57,10 +58,10 @@ applyParameters :: Parameters -> Device -> FancyLogger Device
 applyParameters params device = case params of
     Generate {} -> if p_board params == "" 
         then 
-            returnWithLog (Log Debug "Applied params for generate") new_dev
+            returnWithLog (Log Debug [i|Applied generate parameters for '#{device_name device}'|]) new_dev
         else do
             board_type <- fromString $ p_board params
-            returnWithLog (Log Debug "Applied params for generate") new_dev {board = board_type}
+            returnWithLog (Log Debug [i|Applied generate parameters for '#{device_name device}'|]) $ new_dev {board = board_type}
         where
              new_dev = device
                      { device_name = apply (device_name device) (p_device_name params)   ""
@@ -69,7 +70,7 @@ applyParameters params device = case params of
                      , mqtt        = apply (mqtt device)        (p_mqtt params)          ""
                      , port        = apply (port device)        (p_mqtt_port params) 1883
                      }
-    Hass     {} -> returnWithLog (Log Debug "Applied params for hass") device
+    Hass     {} -> returnWithLog (Log Debug [i|Applied hass parameters for '#{device_name device}'|]) device
         { device_name = apply (device_name device) (p_device_name params) ""
         }
     NoMode   {} -> returnError "This should never happen"

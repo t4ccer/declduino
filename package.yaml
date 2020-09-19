@@ -21,6 +21,7 @@ dependencies:
 - ardu-gen
 - transformers
 - aeson
+- string-interpolate
 library:
   source-dirs: src
 

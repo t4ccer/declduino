@@ -1,4 +1,4 @@
-{-# LANGUAGE MultiParamTypeClasses, FlexibleInstances, MultiWayIf, ScopedTypeVariables #-}
+{-# LANGUAGE MultiParamTypeClasses, FlexibleInstances, MultiWayIf, ScopedTypeVariables, QuasiQuotes #-}
 
 module Board where
 
@@ -8,6 +8,7 @@ import Prelude hiding ((>>))
 import Data.String
 import Data.List (nub, (\\))
 import FancyLogger
+import Data.String.Interpolate (i)
 
 type Seconds = Int
 type Miliseconds = Int
@@ -68,42 +69,42 @@ instance {-# OVERLAPS #-} FromJSON (FancyLogger Reporter) where
                 d <- v .: pack "debounce"
                 return $ returnWithLog (Log Debug "Decoded on-change reporter") (OnChange d)
             | decoded_type == "on-time" -> do
-                i <- v .: pack "interval"
-                return $ returnWithLog (Log Debug "Decoded interval reporter") (OnTime i)
-            | otherwise -> return $ returnError ("Unknown reporter type: " ++ decoded_type)
+                parsed_interval <- v .: pack "interval"
+                return $ returnWithLog (Log Debug "Decoded interval reporter") (OnTime parsed_interval)
+            | otherwise -> return $ returnError [i|"Failed decoding reporter type '#{decoded_type}'|]
     parseJSON _ =  return $ returnError "Failed docoding reporter" 
 
 instance {-# OVERLAPS #-} FromJSON (FancyLogger Component) where
     parseJSON (Object v) = do
         parsed_name <- return <$> v .: pack "name"
-        parsed_str_name <- v .: pack "name"
+        parsed_str_name :: String <- v .: pack "name"
         parsed_type <- v .: pack "type"
         if
             | parsed_type == "digital-output" -> do
                 parsed_pin <- return <$> v .: pack "pin"
 
                 let comp = DigitalOutputComponent <$> parsed_name <*> parsed_pin
-                return $ appendLog (Log Debug ("Parsed digital-output component ('" ++ parsed_str_name ++"')")) comp
+                return $ appendLog (Log Debug [i|Decoded digital-output component '#{parsed_str_name}'|]) comp
             | parsed_type == "digital-input" -> do
                 parsed_pin <- return <$> v .: pack "pin"
                 parsed_reporters <- fmap sequenceA $ v .: pack "reporters"
 
                 let comp = DigitalInputComponent <$> parsed_name <*> parsed_pin <*> parsed_reporters
-                return $ appendLog (Log Debug ("Parsed digital-input component ('" ++ parsed_str_name ++"')")) comp
+                return $ appendLog (Log Debug [i|Decoded digital-input component '#{parsed_str_name}'|]) comp
                 
-            | otherwise -> return $ returnError "Unknown component type"
+            | otherwise -> return $ returnError [i|Failed decoding component type '#{parsed_type}'|]
     parseJSON _ =  return $ returnError "Component parse error"
 
 instance {-# OVERLAPS #-} FromJSON (FancyLogger DS18B20Sensor) where
     parseJSON (Object v) = do
         n <- v .: pack "name"
-        i <- v .: pack "index"
-        return $ return $ DS18B20Sensor n i
+        parsed_index <- v .: pack "index"
+        return $ return $ DS18B20Sensor n parsed_index
     parseJSON _ = return $ returnError "Failed decoding ds18b20 sensor"
 
 instance IsString (FancyLogger BoardType) where
     fromString "esp32" = returnWithLog (Log Debug "Decoded board type from string (esp32)") ESP32
-    fromString s = returnError ("Failed decoding board type '" ++ s++"'")
+    fromString s = returnError [i|Failed decoding board type '#{s}'|]
 
 instance {-# OVERLAPS #-} FromJSON (FancyLogger BoardType) where
     parseJSON (String t) = return $ fromString (unpack t)
@@ -124,8 +125,8 @@ instance {-# OVERLAPS #-} FromJSON (FancyLogger Device) where
 
 hasNameConfilcts :: Device -> FancyLogger Device
 hasNameConfilcts dev = if null repetitions
-        then returnWithLog (Log Debug "Checked for components name conflicts") dev
-        else returnError ("Components name conflict: " ++ head repetitions)
+        then returnWithLog (Log Debug [i|Checked for components name conflicts for '#{device_name dev}'|]) dev
+        else returnError [i|Components name conflict: 'head repetitions' in '#{device_name dev}'|]
         where 
             names = map component_name $ components dev
             repetitions = names \\ nub names
