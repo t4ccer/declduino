@@ -75,14 +75,22 @@ instance {-# OVERLAPS #-} FromJSON (FancyLogger Reporter) where
 
 instance {-# OVERLAPS #-} FromJSON (FancyLogger Component) where
     parseJSON (Object v) = do
-        parsed_name :: FancyLogger String <- return <$> v .: pack "name"
+        parsed_name <- return <$> v .: pack "name"
+        parsed_str_name <- v .: pack "name"
         parsed_type <- v .: pack "type"
         if
             | parsed_type == "digital-output" -> do
                 parsed_pin <- return <$> v .: pack "pin"
+
                 let comp = DigitalOutputComponent <$> parsed_name <*> parsed_pin
-                return $ appendLog (Log Debug "Parsed digital-output component") comp
-            | parsed_type == "digital-input" -> undefined
+                return $ appendLog (Log Debug ("Parsed digital-output component ('" ++ parsed_str_name ++"')")) comp
+            | parsed_type == "digital-input" -> do
+                parsed_pin <- return <$> v .: pack "pin"
+                parsed_reporters <- fmap sequenceA $ v .: pack "reporters"
+
+                let comp = DigitalInputComponent <$> parsed_name <*> parsed_pin <*> parsed_reporters
+                return $ appendLog (Log Debug ("Parsed digital-input component ('" ++ parsed_str_name ++"')")) comp
+                
             | otherwise -> return $ returnError "Unknown component type"
     parseJSON _ =  return $ returnError "Component parse error"
 
@@ -100,7 +108,6 @@ instance IsString (FancyLogger BoardType) where
 instance {-# OVERLAPS #-} FromJSON (FancyLogger BoardType) where
     parseJSON (String t) = return $ fromString (unpack t)
     parseJSON _ =  return $ returnError "Failed yaml decoding"
-
 
 instance {-# OVERLAPS #-} FromJSON (FancyLogger Device) where
     parseJSON (Object v) = do
