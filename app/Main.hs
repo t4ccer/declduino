@@ -29,6 +29,7 @@ runGenerate :: Parameters -> FancyLogger ()
 runGenerate params =  do
     params'           <- verifyParams params
     decodedDevices    <- decodeYamlFiles params'
+    returnWithLog (Log Debug "Applying parameters") ()
     devicesWithParams <- traverse (applyParameters params') decodedDevices
     traverse_ hasNameConfilcts devicesWithParams
     codes             <- traverse generateCode devicesWithParams
@@ -58,14 +59,14 @@ verifyParams params
                 else f'
 
 decodeYamlFiles :: Parameters -> FancyLogger [Device]
-decodeYamlFiles params = mapM decodeYamlFile $ p_files params
+decodeYamlFiles = mapM decodeYamlFile . p_files
 
 decodeYamlFile :: FilePath -> FancyLogger Device
 decodeYamlFile f = do 
     decoded_device :: Either ParseException (FancyLogger Device) <- fromIO $ decodeFileEither f
     case decoded_device of
-        Left e  -> returnError $ "Something gone really wrong: " ++ show e
-        Right d -> d
+        Left e  -> returnError $ "Failed decoding file '" ++ f ++ "': " ++ show e
+        Right d -> appendLog (Log Debug ("Decoded file '" ++ f ++ "'")) d
 
 changeExt :: String -> String -> String
 changeExt ext = (++"."++ext) . head . wordsWhen ('.' ==)

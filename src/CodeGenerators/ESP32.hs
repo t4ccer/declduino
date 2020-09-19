@@ -21,11 +21,11 @@ toStrPtr v = trustMe ("String("++unVal v ++ ").c_str()")
 generateCode :: Device -> FancyLogger String
 generateCode dev = do
     assigned <- assignPWMChannels dev
-    return $ base assigned
+    returnWithLog (Log Debug ("Generated code for '" ++ device_name dev ++ "'")) $ base assigned
 
 assignPWMChannels :: Device -> FancyLogger Device
 assignPWMChannels dev 
-    | length pwms Prelude.> 16 = returnError ("ESP32 can support only 16 pwm outputs, You declared " ++ show (length pwms))
+    | length pwms Prelude.> 16 = returnError ("ESP32 can support only 16 pwm outputs, declared: " ++ show (length pwms))
     | otherwise = return $ dev { components=assigned }
     where
         pwms = [PWMOutputComponent n p (-1) | (PWMOutputComponent n p _) <- components dev]
@@ -297,17 +297,6 @@ componentToCallbacks dev comp = case comp of
                             scall (mqttPublish client) (lit ("declduino/thermo-one/thermo/" ++ sensor_name s)) (toStrPtr temp) 
                         where
                             state = externVar (n ++ "_state_" ++ sensor_name s)
-
-                
-
-            -- handleSensors = flatS $ map handleSensor sensors'
-            -- handleSensor s = do
-                -- temp <- newvar "temp"
-                -- temp =: call (DS.getTempCByIndex sens) (lit $ index s)
-                -- x <- newvar "x"
-                -- x =: toStrPtr temp
-                -- scall (mqttPublish client) (lit ("declduino/thermo-one/thermo/" ++ sensor_name s)) x
-                -- noCodeS
 
 componentToSubscriptions :: Device -> Component -> [(String, String)]
 componentToSubscriptions dev comp = case comp of
