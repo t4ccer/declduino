@@ -126,7 +126,7 @@ instance {-# OVERLAPS #-} FromJSON (FancyLogger Device) where
 hasNameConfilcts :: Device -> FancyLogger Device
 hasNameConfilcts dev = if null repetitions
         then returnWithLog (Log Debug [i|Checked for components name conflicts for '#{device_name dev}'|]) dev
-        else returnError [i|Components name conflict: 'head repetitions' in '#{device_name dev}'|]
+        else returnError [i|Components name conflict. Component name '#{head repetitions}' occured more than once in '#{device_name dev}'|]
         where 
             names = map component_name $ components dev
             repetitions = names \\ nub names
