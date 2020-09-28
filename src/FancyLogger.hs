@@ -5,6 +5,7 @@ module FancyLogger(
     , FancyLogger(..)
     , fromIO
     , printLogs
+    , hasError
 
     , LogLevel(..)
     , LogFormat(..)
@@ -12,6 +13,7 @@ module FancyLogger(
 ) where
 
 import Prelude hiding (log)
+import System.IO (hPutStrLn, stderr)
 import qualified Data.ByteString.Lazy.Char8 as B
 import Data.Aeson hiding (Error)
 import Logs
@@ -63,14 +65,20 @@ fromIO = FancyLogger . fmap (\x -> (Just x, []))
 printLogs :: LogFormat -> LogLevel -> FancyLogger a -> IO ()
 printLogs List level (FancyLogger a) = do
     (_, w) <- a
-    let w' = filter (\(Log l _) -> l >= level) w
-    mapM_ (putStrLn . \(Log l m) -> showLevel l ++m) w'
+    mapM_ printLog $ filter (\(Log l _) -> l >= level) w
     where
+        printLog (Log Error m) = hPutStrLn stderr $ showLevel Error ++ m
+        printLog (Log lvl   m) = putStrLn         $ showLevel lvl   ++ m
         showLevel Debug   = "[ DEBUG ] "
         showLevel Info    = "[ INFO  ] "
         showLevel Warning = "[WARNING] "
         showLevel Error   = "[ ERROR ] "
 printLogs JSON level (FancyLogger a) = do
     (_, w) <- a
-    let w' = filter (\(Log l _) -> l >= level) w 
-    B.putStrLn $ encode w'
+    let w' = filter (\(Log l _) -> l >= level) w
+    if hasError w' 
+        then B.putStrLn         $ encode w'
+        else B.hPutStrLn stderr $ encode w'
+
+hasError :: [Log] -> Bool
+hasError = any (\(Log lvl _) -> lvl == Error)

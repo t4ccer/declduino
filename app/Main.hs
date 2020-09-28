@@ -91,6 +91,6 @@ wordsWhen p s =  case dropWhile p s of
 exitWithCode :: FancyLogger a -> IO ()
 exitWithCode (FancyLogger a) = do
     (_, w) <- a
-    exitWith $ if any (\(Log lvl _) -> lvl == Error) w 
+    exitWith $ if hasError w 
         then ExitFailure 1
         else ExitSuccess 
