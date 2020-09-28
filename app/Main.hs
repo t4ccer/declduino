@@ -7,18 +7,19 @@ import Data.List (isPrefixOf)
 import Data.Yaml
 import Data.String.Interpolate (i)
 import System.Console.CmdArgs (cmdArgs, modes)
+import System.Exit
 import Board
 import CodeGenerators (generateCode)
 import Parameters
 import HomeAssistant
 import FancyLogger
-import Logs
 
 main :: IO ()
 main = do
     params <- cmdArgs (modes parameters)
     let res = run params
     printLogs (p_format params) (p_verbosity params) res
+    exitWithCode res
 
 run :: Parameters -> FancyLogger ()
 run params = case params of
@@ -86,3 +87,10 @@ wordsWhen p s =  case dropWhile p s of
     "" -> []
     s' -> w : wordsWhen p s''
         where (w, s'') = break p s'
+
+exitWithCode :: FancyLogger a -> IO ()
+exitWithCode (FancyLogger a) = do
+    (_, w) <- a
+    exitWith $ if any (\(Log lvl _) -> lvl == Error) w 
+        then ExitFailure 1
+        else ExitSuccess 

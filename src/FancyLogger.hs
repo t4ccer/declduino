@@ -2,7 +2,7 @@
 
 module FancyLogger(
       Logger(..)
-    , FancyLogger
+    , FancyLogger(..)
     , fromIO
     , printLogs
 
