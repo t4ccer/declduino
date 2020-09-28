@@ -3,18 +3,17 @@
 
 module CodeGenerators.ESP32  where
     
-import ArduGen
-import ArduGen.Base
-import ArduGen.Libraries.PubSubClient
-import qualified ArduGen.Libraries.DS18b20 as DS
-import ArduGen.Arduino hiding (map)
-import ArduGen.ESP32
-import Board
 import Prelude hiding ((+), (==), (*), (-), (/=), (>=), (^))
 import qualified Prelude ((+), (*))
 import Data.Char (ord)
+import ArduGen
+import ArduGen.Base
+import ArduGen.Libraries.PubSubClient
+import ArduGen.Arduino hiding (map)
+import ArduGen.ESP32
+import qualified ArduGen.Libraries.DS18b20 as DS
+import Board
 import FancyLogger
-import Logs
 
 toStrPtr :: LVal a -> RVal (Ptr Char)
 toStrPtr v = trustMe ("String("++unVal v ++ ").c_str()")

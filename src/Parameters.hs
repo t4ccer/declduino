@@ -4,11 +4,10 @@
 module Parameters where
 
 import System.Console.CmdArgs
-import Board
 import Data.String
-import FancyLogger
-import Logs
 import Data.String.Interpolate (i)
+import Board
+import FancyLogger
 
 data Parameters = 
       NoMode

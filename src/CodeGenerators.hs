@@ -1,11 +1,11 @@
 {-# LANGUAGE QuasiQuotes #-}
 
 module CodeGenerators where
-import Board
-import qualified CodeGenerators.ESP32 as ESP32
-import FancyLogger
-import Logs
+
 import Data.String.Interpolate (i)
+import Board
+import FancyLogger
+import qualified CodeGenerators.ESP32 as ESP32
 
 generateCode :: Device -> FancyLogger String
 generateCode dev = case board dev of

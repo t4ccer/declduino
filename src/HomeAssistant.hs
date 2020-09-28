@@ -3,11 +3,11 @@
 module HomeAssistant (devicesToEntities) where
 
 import Data.Text (pack)
+import Data.List
+import GHC.Generics
 import Data.Yaml
 import Data.Aeson (genericToJSON, defaultOptions, Options(..))
-import GHC.Generics
 import Board
-import Data.List
 
 data Entity = Entity
     { platform      :: String

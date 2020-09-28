@@ -1,6 +1,10 @@
 {-# LANGUAGE DeriveDataTypeable #-}
 
-module Logs where
+module Logs(
+      LogLevel(..)
+    , LogFormat(..)
+    , Log(..)
+) where
 
 import System.Console.CmdArgs (Data)
 import Prelude hiding (log)

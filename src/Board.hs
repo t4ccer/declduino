@@ -2,14 +2,13 @@
 
 module Board where
 
-import Data.Text (pack, unpack)
-import Data.Yaml 
 import Prelude hiding ((>>))
-import Data.String
+import Data.Text (pack, unpack)
 import Data.List (nub, (\\))
-import FancyLogger
+import Data.String
 import Data.String.Interpolate (i)
-import Logs
+import Data.Yaml 
+import FancyLogger
 
 type Seconds = Int
 type Miliseconds = Int

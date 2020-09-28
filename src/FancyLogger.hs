@@ -1,12 +1,20 @@
 {-# LANGUAGE FlexibleInstances, ConstrainedClassMethods, DeriveFunctor #-}
 
-module FancyLogger where
+module FancyLogger(
+      Logger(..)
+    , FancyLogger
+    , fromIO
+    , printLogs
+
+    , LogLevel(..)
+    , LogFormat(..)
+    , Log(..)
+) where
 
 import Prelude hiding (log)
-import Data.Aeson hiding (Error)
 import qualified Data.ByteString.Lazy.Char8 as B
+import Data.Aeson hiding (Error)
 import Logs
-
 
 class Logger l where
     returnError   :: String -> l a

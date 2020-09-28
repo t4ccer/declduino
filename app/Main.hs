@@ -1,18 +1,18 @@
 {-# LANGUAGE ScopedTypeVariables, QuasiQuotes #-}
 module Main where
 
-import CodeGenerators (generateCode)
-import Board
-import Parameters
-import Data.Yaml
-import System.Console.CmdArgs (cmdArgs, modes)
-import Data.List (isPrefixOf)
 import Control.Monad (zipWithM_)
+import Data.Foldable (traverse_)
+import Data.List (isPrefixOf)
+import Data.Yaml
+import Data.String.Interpolate (i)
+import System.Console.CmdArgs (cmdArgs, modes)
+import Board
+import CodeGenerators (generateCode)
+import Parameters
 import HomeAssistant
 import FancyLogger
 import Logs
-import Data.Foldable (traverse_)
-import Data.String.Interpolate (i)
 
 main :: IO ()
 main = do
