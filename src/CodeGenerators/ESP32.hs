@@ -14,6 +14,7 @@ import Prelude hiding ((+), (==), (*), (-), (/=), (>=), (^))
 import qualified Prelude ((+), (*))
 import Data.Char (ord)
 import FancyLogger
+import Logs
 
 toStrPtr :: LVal a -> RVal (Ptr Char)
 toStrPtr v = trustMe ("String("++unVal v ++ ").c_str()")

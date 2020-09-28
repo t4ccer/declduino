@@ -9,6 +9,7 @@ import Data.String
 import Data.List (nub, (\\))
 import FancyLogger
 import Data.String.Interpolate (i)
+import Logs
 
 type Seconds = Int
 type Miliseconds = Int

@@ -1,21 +1,11 @@
-{-# LANGUAGE FlexibleInstances, ConstrainedClassMethods, DeriveFunctor,DeriveDataTypeable #-}
+{-# LANGUAGE FlexibleInstances, ConstrainedClassMethods, DeriveFunctor #-}
 
 module FancyLogger where
 
-import Control.Monad (void)
-import System.Console.CmdArgs (Data)
 import Prelude hiding (log)
-
-data LogLevel = 
-      Debug
-    | Info
-    | Warning
-    | Error
-    deriving (Show, Eq, Ord, Data)
-
-
-data Log = Log LogLevel String
-    deriving Show
+import Data.Aeson hiding (Error)
+import qualified Data.ByteString.Lazy.Char8 as B
+import Logs
 
 
 class Logger l where
@@ -29,7 +19,6 @@ class Logger l where
     appendLog     :: Log -> l a -> l a
     appendLog l = appendLogs [l] 
 
-data Status = Success | Failure
 
 newtype FancyLogger a = FancyLogger (IO (Maybe a, [Log]))
     deriving (Functor)
@@ -59,13 +48,12 @@ instance Logger FancyLogger where
         (v, logs') <- a
         return (v, logs<>logs')
 
-printLogs :: FancyLogger a -> IO ()
-printLogs (FancyLogger a) = do
-    (_, w) <- a
-    print w
 
-prettyPrintLogs :: LogLevel -> FancyLogger a -> IO ()
-prettyPrintLogs level (FancyLogger a) = do
+fromIO :: IO a -> FancyLogger a
+fromIO = FancyLogger . fmap (\x -> (Just x, []))
+
+printLogs :: LogFormat -> LogLevel -> FancyLogger a -> IO ()
+printLogs List level (FancyLogger a) = do
     (_, w) <- a
     let w' = filter (\(Log l _) -> l >= level) w
     mapM_ (putStrLn . \(Log l m) -> showLevel l ++m) w'
@@ -74,19 +62,7 @@ prettyPrintLogs level (FancyLogger a) = do
         showLevel Info    = "[ INFO  ] "
         showLevel Warning = "[WARNING] "
         showLevel Error   = "[ ERROR ] "
-
-
-fromIO :: IO a -> FancyLogger a
-fromIO = FancyLogger . fmap (\x -> (Just x, []))
-
-
-toLogs :: FancyLogger a -> IO [Log]
-toLogs (FancyLogger a) = do
+printLogs JSON level (FancyLogger a) = do
     (_, w) <- a
-    return w
-
-runLogger :: FancyLogger a -> IO ()
-runLogger (FancyLogger a) = void $ do
-    (io , _) <- a
-    return io
-
+    let w' = filter (\(Log l _) -> l >= level) w 
+    B.putStrLn $ encode w'

@@ -10,6 +10,7 @@ import Data.List (isPrefixOf)
 import Control.Monad (zipWithM_)
 import HomeAssistant
 import FancyLogger
+import Logs
 import Data.Foldable (traverse_)
 import Data.String.Interpolate (i)
 
@@ -17,7 +18,7 @@ main :: IO ()
 main = do
     params <- cmdArgs (modes parameters)
     let res = run params
-    prettyPrintLogs (p_verbosity params) res
+    printLogs (p_format params) (p_verbosity params) res
 
 run :: Parameters -> FancyLogger ()
 run params = case params of

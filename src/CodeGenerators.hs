@@ -4,6 +4,7 @@ module CodeGenerators where
 import Board
 import qualified CodeGenerators.ESP32 as ESP32
 import FancyLogger
+import Logs
 import Data.String.Interpolate (i)
 
 generateCode :: Device -> FancyLogger String
