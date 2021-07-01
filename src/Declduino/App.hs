@@ -1,13 +1,23 @@
+{-# LANGUAGE DeriveDataTypeable         #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 module Declduino.App where
 
 import           Control.Monad.Except
 import           Control.Monad.Reader
 import           Control.Monad.Writer
+import           Data.Data
 
 type Env = ()
 
 type Log = ()
+
+data LogLevel
+  = Debug
+  | Info
+  | Warning
+  | Error
+  | Critical
+  deriving (Eq, Ord, Bounded, Show, Data)
 
 type Logs = [Log]
 

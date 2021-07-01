@@ -37,5 +37,6 @@ executables:
     - -with-rtsopts=-N
     - -Wall
     - -fwarn-incomplete-patterns
+    - -Wno-unused-imports
     dependencies:
     - declduino
