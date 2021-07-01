@@ -14,18 +14,18 @@ import           Declduino.App
 data Parameters
     = Generate
         { paramVerbosity  :: LogLevel
-        , paramSsid       :: String
-        , paramPass       :: String
-        , paramMqtt       :: String
-        , paramMqttPort   :: Int
-        , paramBoard      :: String
-        , paramDeviceName :: String
+        , paramDeviceName :: Maybe String
+        , paramSsid       :: Maybe String
+        , paramPass       :: Maybe String
+        , paramMqtt       :: Maybe String
+        , paramMqttPort   :: Maybe Int
+        , paramBoard      :: Maybe String
         , paramFiles      :: [FilePath]
         }
     | HomeAssistant
         { paramVerbosity  :: LogLevel
+        , paramDeviceName :: Maybe String
         , paramOutput     :: FilePath
-        , paramDeviceName :: String
         , paramFiles      :: [FilePath]
         }
     deriving (Show, Data, Typeable)
@@ -36,7 +36,7 @@ parameters =
         { paramSsid        = def  &= name "s" &= name "ssid"      &= groupname "OPTIONS" &= typ "<wifi-ssid>"   &= explicit &= help "Overrides WiFi SSID"
         , paramPass        = def  &= name "k" &= name "pass"      &= groupname "OPTIONS" &= typ "<wifi-pass>"   &= explicit &= help "Overrides WiFi key"
         , paramMqtt        = def  &= name "m" &= name "mqtt"      &= groupname "OPTIONS" &= typ "<mqtt-addr>"   &= explicit &= help "Overrides MQTT broker address"
-        , paramMqttPort    = 1883 &= name "p" &= name "port"      &= groupname "OPTIONS" &= typ "<mqtt-port>"   &= explicit &= help "Overrides MQTT broker port"
+        , paramMqttPort    = def  &= name "p" &= name "port"      &= groupname "OPTIONS" &= typ "<mqtt-port>"   &= explicit &= help "Overrides MQTT broker port"
         , paramBoard       = def  &= name "b" &= name "board"     &= groupname "OPTIONS" &= typ "<board-type>"  &= explicit &= help "Overrides board type"
         , paramDeviceName  = def  &= name "n" &= name "name"      &= groupname "OPTIONS" &= typ "<device-name>" &= explicit &= help "Overrides device name. Note that this option will override name of all devices"
         , paramVerbosity   = Info &= name "v" &= name "verbosity" &= groupname "OPTIONS" &= typ "<mode>"        &= explicit &= help "Sets verbosity. mode = <debug|info|warning|error>. Default: info"
