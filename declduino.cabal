@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: d349651a6ceb9900fc4a7fea2e657015ba74cf397f9be839baadfd77d9941567
+-- hash: aebe3de05c7632ad77fdb9c50710d55cec4455495a9ccdc6471dc39583030495
 
 name:           declduino
 version:        0.1.0.0
@@ -31,6 +31,7 @@ library
       Declduino.CodeGenerator.Common
       Declduino.CodeGenerator.Esp32
       Declduino.Device
+      Declduino.HomeAssistant
   other-modules:
       Paths_declduino
   hs-source-dirs:
