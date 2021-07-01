@@ -1,10 +1,10 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.33.0.
+-- This file has been generated from package.yaml by hpack version 0.34.4.
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 20ca7ba537b5a9db651b8bf28ecc60c134c662ecfd6b274db2f2531e4577ff07
+-- hash: 23b0fe927dca5e4787109857dcbbd0a9e5526cb5f0e7d21010c9f48583f9982f
 
 name:           declduino
 version:        0.1.0.0
@@ -26,13 +26,12 @@ source-repository head
 
 library
   exposed-modules:
-      Board
-      CodeGenerators
-      CodeGenerators.ESP32
-      FancyLogger
-      HomeAssistant
-      Logs
-      Parameters
+      Declduino.App
+      Declduino.Cli
+      Declduino.CodeGenerator.Common
+      Declduino.CodeGenerator.Esp32
+      Declduino.Device
+      Declduino.Log
   other-modules:
       Paths_declduino
   hs-source-dirs:
@@ -40,7 +39,7 @@ library
   build-depends:
       aeson
     , ardu-gen
-    , base >=4.14.0 && <4.14.1
+    , base >=4.14.0
     , bytestring
     , cmdargs
     , string-interpolate
@@ -59,7 +58,7 @@ executable declduino
   build-depends:
       aeson
     , ardu-gen
-    , base >=4.14.0 && <4.14.1
+    , base >=4.14.0
     , bytestring
     , cmdargs
     , declduino
