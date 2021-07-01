@@ -19,9 +19,11 @@ dependencies:
 - bytestring
 - cmdargs
 - ardu-gen
+- mtl
 - transformers
 - aeson
 - string-interpolate
+
 library:
   source-dirs: src
 
