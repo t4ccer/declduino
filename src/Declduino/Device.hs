@@ -18,7 +18,7 @@ newtype Miliseconds = Miliseconds { getMiliseconds :: Int }
   deriving newtype (Num, ToJSON, FromJSON)
 
 data BoardType =
-      ESP32
+      Esp32
     deriving (Show, Eq, Generic, ToJSON, FromJSON)
 
 data Reporter =

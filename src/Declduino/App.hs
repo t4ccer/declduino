@@ -50,7 +50,9 @@ instance MonadIO App where
   liftIO m = App $ ReaderT $ \_ -> fmap (\a -> (Right a, [])) m
 
 addLog :: Log -> App ()
-addLog l = App $ lift $ return (Right (), pure l)
+addLog l = do
+  liftIO $ print l
+  App $ lift $ return (Right (), pure l)
 
 logDebug :: String -> App ()
 logDebug = addLog . Log Debug

@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: aebe3de05c7632ad77fdb9c50710d55cec4455495a9ccdc6471dc39583030495
+-- hash: 6cdefd5da876fc5cd0c40257e0f6146ca3ac9e6de99dbfcf8e5b0490ed1c4221
 
 name:           declduino
 version:        0.1.0.0
@@ -41,8 +41,8 @@ library
     , ardu-gen
     , base >=4.14.0
     , bytestring
-    , cmdargs
     , mtl
+    , optparse-applicative
     , string-interpolate
     , text >=1.2.3.2
     , transformers
@@ -61,9 +61,9 @@ executable declduino
     , ardu-gen
     , base >=4.14.0
     , bytestring
-    , cmdargs
     , declduino
     , mtl
+    , optparse-applicative
     , string-interpolate
     , text >=1.2.3.2
     , transformers
