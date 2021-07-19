@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 6cdefd5da876fc5cd0c40257e0f6146ca3ac9e6de99dbfcf8e5b0490ed1c4221
+-- hash: bc09fa8b8698c9cb4c3b3faa1f9057e50e8c2eadcfa28716a32db3c9d5fc23bd
 
 name:           declduino
 version:        0.1.0.0
@@ -32,10 +32,13 @@ library
       Declduino.CodeGenerator.Esp32
       Declduino.Device
       Declduino.HomeAssistant
+      Declduino.Yaml
   other-modules:
       Paths_declduino
   hs-source-dirs:
       src
+  default-extensions:
+      QuasiQuotes
   build-depends:
       aeson
     , ardu-gen
@@ -55,6 +58,8 @@ executable declduino
       Paths_declduino
   hs-source-dirs:
       app
+  default-extensions:
+      QuasiQuotes
   ghc-options: -threaded -rtsopts -with-rtsopts=-N -Wall -fwarn-incomplete-patterns -Wno-unused-imports
   build-depends:
       aeson

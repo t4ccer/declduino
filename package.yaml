@@ -24,6 +24,9 @@ dependencies:
 - aeson
 - string-interpolate
 
+default-extensions:
+ - QuasiQuotes
+
 library:
   source-dirs: src
 
