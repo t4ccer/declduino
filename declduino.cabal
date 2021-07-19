@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: bc09fa8b8698c9cb4c3b3faa1f9057e50e8c2eadcfa28716a32db3c9d5fc23bd
+-- hash: 43736e08803d7bd66ce9941500394b74d6ed8fa7e7a109e76233f7a06a5616f2
 
 name:           declduino
 version:        0.1.0.0
@@ -28,6 +28,7 @@ library
   exposed-modules:
       Declduino.App
       Declduino.Cli
+      Declduino.CodeGenerator
       Declduino.CodeGenerator.Common
       Declduino.CodeGenerator.Esp32
       Declduino.Device
@@ -41,9 +42,9 @@ library
       QuasiQuotes
   build-depends:
       aeson
-    , ardu-gen
     , base >=4.14.0
     , bytestring
+    , c-dsl
     , mtl
     , optparse-applicative
     , string-interpolate
@@ -63,9 +64,9 @@ executable declduino
   ghc-options: -threaded -rtsopts -with-rtsopts=-N -Wall -fwarn-incomplete-patterns -Wno-unused-imports
   build-depends:
       aeson
-    , ardu-gen
     , base >=4.14.0
     , bytestring
+    , c-dsl
     , declduino
     , mtl
     , optparse-applicative

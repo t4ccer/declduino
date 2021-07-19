@@ -4,6 +4,7 @@
 module Declduino.App
   ( Env
   , Log(..), LogLevel(..), Logs
+  , MonadLogger(..)
   , logInfo, logDebug, logWarning, logError, throwError
   , App
   , runApp
@@ -49,10 +50,16 @@ instance Monad App where
 instance MonadIO App where
   liftIO m = App $ ReaderT $ \_ -> fmap (\a -> (Right a, [])) m
 
-addLog :: Log -> App ()
-addLog l = do
-  liftIO $ print l
-  App $ lift $ return (Right (), pure l)
+instance MonadFail App where
+  fail = throwError
+
+class MonadLogger m where
+  addLog :: Log -> m ()
+
+instance MonadLogger App where
+  addLog l = do
+    liftIO $ print l
+    App $ lift $ return (Right (), pure l)
 
 logDebug :: String -> App ()
 logDebug = addLog . Log Debug
@@ -64,7 +71,9 @@ logWarning :: String -> App ()
 logWarning = addLog . Log Warning
 
 logError :: String -> App a
-logError e = App $ lift $ return (Left l, l)
+logError e = do
+  liftIO $ print $ head l
+  App $ lift $ return (Left l, l)
   where l = [Log Error e]
 
 throwError :: String -> App a

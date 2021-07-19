@@ -2,5 +2,6 @@ resolver: lts-18.0
 packages:
 - .
 extra-deps:
-- github: t4ccer/ardu-gen
-  commit: 7dcce4b677623be85f6229df20aa57210d31a0a1 
+- github: jozefg/c-dsl
+  commit: 57251493a77f9d72e70afe6c9a3b2e9b5359082d
+

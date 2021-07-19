@@ -5,16 +5,16 @@
 
 packages:
 - completed:
-    size: 11682
-    url: https://github.com/t4ccer/ardu-gen/archive/7dcce4b677623be85f6229df20aa57210d31a0a1.tar.gz
-    name: ardu-gen
-    version: 0.1.0.0
-    sha256: 88980cda124741baed12a9626595630ab5c16a5de77cb2388fb7767c97ce8328
+    size: 6747
+    url: https://github.com/jozefg/c-dsl/archive/57251493a77f9d72e70afe6c9a3b2e9b5359082d.tar.gz
+    name: c-dsl
+    version: 0.3.1
+    sha256: 7dc69475818282d711c367493cd02b88511c7555697f7df625049f3530707c54
     pantry-tree:
-      size: 1506
-      sha256: f31a10cd28f31411eee613c96feab9cbcaaa041875c07b86d49c7e6e8a345618
+      size: 716
+      sha256: 80020fbf9e42c055bccb291d3c799a0a644a0712ff5f0682ffe6c9a68fb64850
   original:
-    url: https://github.com/t4ccer/ardu-gen/archive/7dcce4b677623be85f6229df20aa57210d31a0a1.tar.gz
+    url: https://github.com/jozefg/c-dsl/archive/57251493a77f9d72e70afe6c9a3b2e9b5359082d.tar.gz
 snapshots:
 - completed:
     size: 585393

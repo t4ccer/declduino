@@ -2,19 +2,20 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 module Main where
 
+import qualified Data.Text.IO            as T
 import           Options.Applicative
 import           System.Environment
 import           System.Exit
 
 import           Declduino.App
 import           Declduino.Cli
+import           Declduino.CodeGenerator
 import           Declduino.Device
 import           Declduino.Yaml
 
 main :: IO ()
 main = do
   params <- execParser modeParser
-  -- print params
   let env = ()
   res <- runApp env $ run params
   case res of
@@ -32,8 +33,15 @@ runGenerate :: GenerateParameters -> App ()
 runGenerate GenerateParameters{..} = do
   logDebug "Running generate"
   devices :: [Device] <- traverse decodeFile paramFiles
-  liftIO $ mapM_ print devices
+  codes <- traverse generateCode devices
+  liftIO $ mapM_ (\(code, fname) -> T.writeFile fname code) $ zip codes $ fmap (changeExtension "ino") paramFiles
   return ()
+
+changeExtension :: String -> FilePath -> FilePath
+changeExtension ext org =
+  case reverse $ dropWhile (/= '.') $ reverse org of
+    ""   -> org <> "." <> ext
+    base -> base <> ext
 
 runHomeAssistant :: HomeAssistantParameters -> App ()
 runHomeAssistant _ = return ()

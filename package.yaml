@@ -18,11 +18,11 @@ dependencies:
 - text >= 1.2.3.2
 - bytestring
 - optparse-applicative
-- ardu-gen
 - mtl
 - transformers
 - aeson
 - string-interpolate
+- c-dsl
 
 default-extensions:
  - QuasiQuotes
