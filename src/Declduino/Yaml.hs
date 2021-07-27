@@ -6,11 +6,11 @@ import qualified Data.Yaml               as Yaml
 import           Declduino.App
 
 -- TODO implement proper YamlException formatting
-decodeFile :: Yaml.FromJSON a => FilePath -> App a
+decodeFile :: (Yaml.FromJSON a, MonadFail m, MonadIO m) => FilePath -> m a
 decodeFile fp = liftIOEither (\e -> [i|Decoding file '#{fp} failed: #{renderException e}'|]) $ Yaml.decodeFileEither fp
 
 renderException :: Yaml.ParseException -> String
-renderException (Yaml.AesonException e) = e 
-renderException e = show e
+renderException (Yaml.AesonException e) = e
+renderException e                       = show e
 
 

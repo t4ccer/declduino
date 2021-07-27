@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 43736e08803d7bd66ce9941500394b74d6ed8fa7e7a109e76233f7a06a5616f2
+-- hash: e72c16975bcbb74d5719777049c6d1f12aa0b8e9cf75596cefc157438dc139fb
 
 name:           declduino
 version:        0.1.0.0
@@ -40,11 +40,14 @@ library
       src
   default-extensions:
       QuasiQuotes
+      TemplateHaskell
+      OverloadedStrings
   build-depends:
       aeson
     , base >=4.14.0
     , bytestring
-    , c-dsl
+    , containers
+    , monad-logger
     , mtl
     , optparse-applicative
     , string-interpolate
@@ -61,13 +64,16 @@ executable declduino
       app
   default-extensions:
       QuasiQuotes
+      TemplateHaskell
+      OverloadedStrings
   ghc-options: -threaded -rtsopts -with-rtsopts=-N -Wall -fwarn-incomplete-patterns -Wno-unused-imports
   build-depends:
       aeson
     , base >=4.14.0
     , bytestring
-    , c-dsl
+    , containers
     , declduino
+    , monad-logger
     , mtl
     , optparse-applicative
     , string-interpolate

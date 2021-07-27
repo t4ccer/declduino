@@ -20,12 +20,15 @@ dependencies:
 - optparse-applicative
 - mtl
 - transformers
+- monad-logger
 - aeson
 - string-interpolate
-- c-dsl
+- containers
 
 default-extensions:
  - QuasiQuotes
+ - TemplateHaskell
+ - OverloadedStrings
 
 library:
   source-dirs: src

@@ -1,4 +1,5 @@
 {-# LANGUAGE ApplicativeDo         #-}
+{-# LANGUAGE TypeApplications         #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE LambdaCase            #-}
 {-# LANGUAGE RecordWildCards       #-}
@@ -6,6 +7,7 @@
 module Declduino.Cli where
 
 import           Options.Applicative
+import Data.Text (Text)
 
 import           Declduino.App
 import           Declduino.Device
@@ -45,15 +47,15 @@ versionOption :: Parser (a -> a)
 versionOption = infoOption "0.0.0-dev" (long "version" <> help "Show version")
 
 logLevel :: ReadM LogLevel
-logLevel = str >>= \case
-  "debug"   -> return Debug
-  "info"    -> return Info
-  "warning" -> return Warning
-  "error"   -> return Error
+logLevel = str @Text >>= \case
+  "debug"   -> return LevelDebug
+  "info"    -> return LevelInfo
+  "warning" -> return LevelWarn
+  "error"   -> return LevelError
   _         -> readerError "Accepted log levels: debug, info, warning, error"
 
 boardType :: ReadM BoardType
-boardType = str >>= \case
+boardType = str @Text >>= \case
   "esp32" -> return Esp32
   _       -> readerError "Accepted board types: esp32"
 
@@ -61,7 +63,7 @@ intOption :: Mod OptionFields Int -> Parser Int
 intOption = option auto
 
 verbosity :: Parser LogLevel
-verbosity = option logLevel (long "verbosity" <> short 'v' <> value Info <> help "Set log verbosity level")
+verbosity = option logLevel (long "verbosity" <> short 'v' <> value LevelInfo <> help "Set log verbosity level")
 
 files :: Parser [FilePath]
 files = some (argument str (metavar "FILES..."))

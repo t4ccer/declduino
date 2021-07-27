@@ -16,25 +16,25 @@ import           Declduino.Yaml
 main :: IO ()
 main = do
   params <- execParser modeParser
-  let env = ()
-  res <- runApp env $ run params
+  res <- runAppIO $ run params
   case res of
     Left _  -> do
       exitFailure
     Right _ -> do
       exitSuccess
 
-run :: Mode -> App ()
+run :: (MonadIO m, MonadFail m, MonadLogger m) => Mode -> m ()
 run params = case params of
   ModeGenerate params'      -> runGenerate params'
   ModeHomeAssistant params' -> runHomeAssistant params'
 
-runGenerate :: GenerateParameters -> App ()
+runGenerate :: (MonadIO m, MonadFail m, MonadLogger m) => GenerateParameters -> m ()
 runGenerate GenerateParameters{..} = do
-  logDebug "Running generate"
+  logDebugN "Running generate"
   devices :: [Device] <- traverse decodeFile paramFiles
   codes <- traverse generateCode devices
-  liftIO $ mapM_ (\(code, fname) -> T.writeFile fname code) $ zip codes $ fmap (changeExtension "ino") paramFiles
+  liftIO $ mapM_ (\(code, fname) -> putStrLn fname >> putStrLn "" >> T.putStrLn code) $ zip codes $ fmap (changeExtension "ino") paramFiles
+  -- liftIO $ mapM_ (\(code, fname) -> T.writeFile fname code) $ zip codes $ fmap (changeExtension "ino") paramFiles
   return ()
 
 changeExtension :: String -> FilePath -> FilePath
@@ -43,7 +43,7 @@ changeExtension ext org =
     ""   -> org <> "." <> ext
     base -> base <> ext
 
-runHomeAssistant :: HomeAssistantParameters -> App ()
+runHomeAssistant :: (MonadIO m, MonadFail m, MonadLogger m) => HomeAssistantParameters -> m ()
 runHomeAssistant _ = return ()
 
 debug :: String -> IO ()

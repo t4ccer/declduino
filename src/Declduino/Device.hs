@@ -8,6 +8,7 @@
 {-# LANGUAGE RecordWildCards            #-}
 {-# LANGUAGE ScopedTypeVariables        #-}
 {-# LANGUAGE UndecidableInstances       #-}
+{-# LANGUAGE FlexibleContexts       #-}
 module Declduino.Device where
 
 import           Control.Monad
@@ -16,6 +17,8 @@ import           Data.Maybe
 import           Data.Text        (Text)
 import           Data.Yaml
 import           GHC.Generics
+
+import Declduino.App
 
 newtype Seconds = Seconds { getSeconds :: Int }
   deriving stock   (Show, Eq, Ord)
@@ -62,24 +65,24 @@ instance FromJSON Reporter where
 
 data Component
   = DigitalOutput
-    { componentName :: String
+    { componentName :: Text
     , componentPin  :: Int
     }
   | DigitalInput
-    { componentName      :: String
+    { componentName      :: Text
     , componentReporters :: [Reporter]
     , componentPin       :: Int
     }
   | PWMOutput
-    { componentName          :: String
+    { componentName          :: Text
     , componentPin           :: Int
     , componentSensorChannel :: Int
     }
   | DS18B20
-    { componentName          :: String
+    { componentName          :: Text
     , componentReporters     :: [Reporter]
     , componentPin           :: Int
-    , componentSensorAddress :: Either Int String
+    , componentSensorAddress :: Either Int Text
     }
     deriving (Show, Eq, Generic)
 
@@ -117,12 +120,21 @@ instance FromJSON Component where
         pure DS18B20{..}
       _       -> prependFailure "parsing board type failed, " (unexpected (String type'))
 
+hasDs18b20 :: MonadReader Device m => m Bool
+hasDs18b20 = do
+  Device{..} <- ask
+  pure $ go deviceComponents
+  where
+    go [] = False
+    go ((DS18B20{}):_) = True
+    go (_:xs) = go xs
+
 data Device = Device
     { deviceBoard      :: BoardType
-    , deviceName       :: String
-    , deviceSsid       :: String
-    , devicePass       :: String
-    , deviceMqtt       :: String
+    , deviceName       :: Text
+    , deviceSsid       :: Text
+    , devicePass       :: Text
+    , deviceMqtt       :: Text
     , devicePort       :: Int
     , deviceComponents :: [Component]
     }
