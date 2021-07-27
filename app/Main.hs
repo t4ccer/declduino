@@ -6,6 +6,7 @@ import qualified Data.Text.IO            as T
 import           Options.Applicative
 import           System.Environment
 import           System.Exit
+import GitHash
 
 import           Declduino.App
 import           Declduino.Cli
@@ -27,6 +28,7 @@ run :: (MonadIO m, MonadFail m, MonadLogger m) => Mode -> m ()
 run params = case params of
   ModeGenerate params'      -> runGenerate params'
   ModeHomeAssistant params' -> runHomeAssistant params'
+  ModeVersion -> runVersion
 
 runGenerate :: (MonadIO m, MonadFail m, MonadLogger m) => GenerateParameters -> m ()
 runGenerate GenerateParameters{..} = do
@@ -46,6 +48,16 @@ changeExtension ext org =
 runHomeAssistant :: (MonadIO m, MonadFail m, MonadLogger m) => HomeAssistantParameters -> m ()
 runHomeAssistant _ = return ()
 
+runVersion :: MonadIO m => m ()
+runVersion = liftIO $ putStrLn (ver <> comm' <> dirty)
+  where
+    (ver, comm) = span (/= '-') $ giTag gi
+    gi = $$tGitInfoCwd
+    comm' | null comm = ""
+         | otherwise = " [" <> tail comm <> "]" 
+    dirty | giDirty gi = " (dirty)"
+          | otherwise   = ""
+  
 debug :: String -> IO ()
 debug args = withArgs (words args) (withProgName "declduino" main)
 

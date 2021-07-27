@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: e72c16975bcbb74d5719777049c6d1f12aa0b8e9cf75596cefc157438dc139fb
+-- hash: 1f2b7701d96413da5e710c6397ffc675b2fe92e2f5d119ea6c79bd88aa962bf5
 
 name:           declduino
 version:        0.1.0.0
@@ -47,6 +47,7 @@ library
     , base >=4.14.0
     , bytestring
     , containers
+    , githash
     , monad-logger
     , mtl
     , optparse-applicative
@@ -73,6 +74,7 @@ executable declduino
     , bytestring
     , containers
     , declduino
+    , githash
     , monad-logger
     , mtl
     , optparse-applicative

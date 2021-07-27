@@ -24,6 +24,7 @@ dependencies:
 - aeson
 - string-interpolate
 - containers
+- githash
 
 default-extensions:
  - QuasiQuotes

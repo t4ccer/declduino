@@ -35,16 +35,14 @@ data HomeAssistantParameters = HomeAssistantParameters
 data Mode
   = ModeGenerate      GenerateParameters
   | ModeHomeAssistant HomeAssistantParameters
+  | ModeVersion
   deriving (Show)
 
 modeParser :: ParserInfo Mode
 modeParser =
   info
-    (helper <*> versionOption <*> programOptions)
+    (helper <*> programOptions)
     fullDesc
-
-versionOption :: Parser (a -> a)
-versionOption = infoOption "0.0.0-dev" (long "version" <> help "Show version")
 
 logLevel :: ReadM LogLevel
 logLevel = str @Text >>= \case
@@ -94,4 +92,6 @@ programOptions = hsubparser
       (progDesc "Generate source code from provided `device` files."))
   <> command "homeassistant" (info (ModeHomeAssistant <$> homeAssistantOptions)
       (progDesc "Generate Home Assistant configuration for provided `device` files"))
+  <> command "version"       (info (pure ModeVersion)
+      (progDesc "Print program version"))
   )
